@@ -35,7 +35,7 @@ class SignParser {
         LinkedList<String> signs = new LinkedList<>();
         int endIndex = str.length();
         int startIndex = 0;
-        while (endIndex > 0) {
+        while (startIndex < endIndex) {
             String s = str.substring(startIndex, endIndex);
             if (signSet.contains(s)) {
                 signs.add(s);

@@ -12,7 +12,7 @@ import com.interpreter.analysis.Token.Type;
 public class Lexer {
 
     private static enum State {
-        Normal, Identifier, Sign, Annotation, String, Space, Number;
+        Normal, Identifier, Sign, Annotation, String, Number, AnnOrSign, EndAnn, Space;
     }
 
     private static final char[] FilterChar = new char[] {
@@ -49,7 +49,7 @@ public class Lexer {
         tokenBuffer = new LinkedList<>();
     }
 
-    Token read() throws IOException, LexerException {
+    public Token read() throws IOException, LexerException {
 
         if(endToken != null) {
             return endToken;
@@ -67,11 +67,13 @@ public class Lexer {
         return token;
     }
 
+    private boolean isEscape = false;
+    private boolean hasDot = false;
+    private boolean annotationOneLine = false;
+
     private boolean readChar(char c) throws LexerException {
         boolean moveCursor = true;
         Type type = null;
-
-        boolean isEscape = false;
 
         if(!include(FilterChar, c)) {
 
@@ -79,18 +81,17 @@ public class Lexer {
 
                 if(inIdentifierSetFirst(c)) {
                     state = State.Identifier;
-                    buf = new StringBuilder().append(c);
+                } else if(c == '/') {
+                    state = State.AnnOrSign;
                 } else if(SignParser.inCharSet(c)) {
                     state = State.Sign;
-                } else if(c == '#') {
-                    state = State.Annotation;
-                    buf = new StringBuilder().append(c);
                 } else if(c == '\"' | c == '\'') {
                     state = State.String;
-                    buf = new StringBuilder().append(c);
                     isEscape = false;
                 } else if(include(Space, c)) {
                     state = State.Space;
+                } else if (inNumberSet(c)) {
+                    state = State.Number;
                 } else if (c == ';') {
                     type = Type.NewStatement;
                 } else if(c == '\n') {
@@ -112,7 +113,37 @@ public class Lexer {
                     state = State.Normal;
                     moveCursor = false;
                 }
-            } else if(state == State.Sign) {
+            } else if (state == State.Number) {
+
+                if (c == '.') {
+                    if (hasDot) throw new LexerException(c);
+                    hasDot = true;
+                    buf.append(c);
+                } else if (inNumberSet(c)) {
+                    buf.append(c);
+                } else {
+                    type = hasDot ? Type.Decimal : Type.Integer;
+                    hasDot = false;
+                    state = State.Normal;
+                    moveCursor = false;
+                }
+
+            } else if (state == State.AnnOrSign) {
+
+                if (c == '*' || c == '/') {
+                    annotationOneLine = c != '*';
+                    buf.append(c);
+                    state = State.Annotation;
+                } else if (SignParser.inCharSet(c)) {
+                    buf.append(c);
+                    state = State.Sign;
+                } else {
+                    createToken(Type.Sign, "/");
+                    type = null;
+                    state = State.Normal;
+                    moveCursor = false;
+                }
+            } else if (state == State.Sign) {
 
                 if(SignParser.inCharSet(c)) {
                     buf.append(c);
@@ -127,12 +158,28 @@ public class Lexer {
                 }
             } else if(state == State.Annotation) {
 
-                if(c != '\n' & c != '\0') {
-                    buf.append(c);
+                if (annotationOneLine) {
+                    if(c != '\n' & c != '\0') {
+                        buf.append(c);
+                    } else {
+                        type = Type.Annotation;
+                        state = State.Normal;
+                        annotationOneLine = false;
+                        moveCursor = false;
+                    }
                 } else {
+                    if (c == '*') state = State.EndAnn;
+                    buf.append(c);
+                }
+            } else if (state == State.EndAnn) {
+
+                if (c == '/') {
+                    buf.append(c);
                     type = Type.Annotation;
                     state = State.Normal;
                     moveCursor = false;
+                } else {
+                    state = State.Annotation;
                 }
             } else if(state == State.String) {
 
@@ -158,10 +205,11 @@ public class Lexer {
                         state = State.Normal;
                     }
                 }
-            }else if(state == State.Space) {
+            } else if(state == State.Space) {
 
                 if(include(Space, c)) {
                     buf.append(c);
+
                 } else {
                     type = Type.Space;
                     state = State.Normal;
@@ -176,7 +224,7 @@ public class Lexer {
     }
 
     private void createToken(Type type) {
-        Token token = new Token(type, buf != null ? buf.toString() : null);
+        Token token = new Token(type, buf.toString());
         tokenBuffer.addFirst(token);
         buf = null;
     }
