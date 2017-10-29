@@ -11,20 +11,15 @@ public class Token {
         add("true");
         add("false");
         add("if");
-        add("when");
         add("else");
         add("while");
-        add("for");
-        add("do");
-        add("void");
         add("int");
-        add("float");
+        add("bool");
         add("double");
-        add("char");
-        add("long");
         add("break");
         add("continue");
-        add("return");
+        add("read");
+        add("write");
     }};
     
     final Type type;
@@ -39,9 +34,11 @@ public class Token {
     }
 
     Token(Type type, String value) {
-
         this.type = type;
         this.value = value;
+        if (KeywordsSet.contains(value)) {
+            type = Type.Keyword;
+        }
     }
 
     @Override

@@ -11,9 +11,9 @@ class SignParser {
         add(">"); add("<"); add(">="); add("<="); add("=="); add("!=");
         add("+="); add("-="); add("*="); add("/="); add("%=");
         add("&&"); add("||"); add("!"); add("&&="); add("||=");
-        add("<<"); add(">>"); add("<<="); add(">>=");
-        add("&"); add("|"); add("&="); add("|=");
-        add("?"); add(":");
+//        add("<<"); add(">>"); add("<<="); add(">>=");
+//        add("&"); add("|"); add("^"); add("&="); add("|="); add("^=");
+//        add("?"); add(":");
         add("("); add(")"); add("{"); add("}"); add("["); add("]");
     }};
     private final static HashSet<Character> signCharSet = new HashSet<>();
