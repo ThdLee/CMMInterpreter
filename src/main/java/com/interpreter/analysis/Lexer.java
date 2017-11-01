@@ -39,7 +39,7 @@ public class Lexer {
     private final LinkedList<Token> tokenBuffer;
 
     private int pos;
-    private int lines;
+    private int lines = 1;
 
     private StringBuilder buf;
 
@@ -49,7 +49,7 @@ public class Lexer {
         tokenBuffer = new LinkedList<>();
     }
 
-    public Token read() throws IOException, LexerException {
+    public Token read() throws IOException {
 
         if(endToken != null) {
             return endToken;
@@ -57,7 +57,11 @@ public class Lexer {
         while(tokenBuffer.isEmpty()) {
             pos++;
             int read = reader.read();
-            char c = (read == -1 ? '\0' : (char) read);
+            char c = (read == -1 || read == 0 ? '\0' : (char) read);
+            if (c == '\n') {
+                lines++;
+                pos = 0;
+            }
             while(!readChar(c)) {}
         }
         Token token = tokenBuffer.removeLast();
@@ -95,12 +99,11 @@ public class Lexer {
                 } else if (c == ';') {
                     type = Type.NewStatement;
                 } else if(c == '\n') {
-                    lines++;
-                    pos = 0;
+
                 } else if(c == '\0') {
                     type = Type.EndSymbol;
                 } else {
-                    throw new LexerException(c);
+                    throw new LexerException(lines, pos, c);
                 }
                 buf = new StringBuilder().append(c);
 
@@ -116,7 +119,7 @@ public class Lexer {
             } else if (state == State.Number) {
 
                 if (c == '.') {
-                    if (hasDot) throw new LexerException(c);
+                    if (hasDot) throw new LexerException(lines, pos, c);
                     hasDot = true;
                     buf.append(c);
                 } else if (inNumberSet(c)) {
@@ -177,21 +180,21 @@ public class Lexer {
                     buf.append(c);
                     type = Type.Annotation;
                     state = State.Normal;
-                    moveCursor = false;
+                    moveCursor = true;
                 } else {
                     state = State.Annotation;
                 }
             } else if(state == State.String) {
 
                 if(c == '\n') {
-                    throw new LexerException(c);
+                    throw new LexerException(lines, pos, c);
                 } else if(c == '\0') {
-                    throw new LexerException(c);
+                    throw new LexerException(lines, pos, c);
                 } else if(isEscape) {
 
                     Character tms = EscapeMap.get(c);
                     if(tms == null) {
-                        throw new LexerException(c);
+                        throw new LexerException(lines, pos, c);
                     }
                     buf.append(tms);
                     isEscape = false;
@@ -224,13 +227,13 @@ public class Lexer {
     }
 
     private void createToken(Type type) {
-        Token token = new Token(type, buf.toString());
+        Token token = new Token(type, buf.toString(), pos, lines);
         tokenBuffer.addFirst(token);
         buf = null;
     }
 
     private void createToken(Type type, String value) {
-        Token token = new Token(type, value);
+        Token token = new Token(type, value, pos, lines);
         tokenBuffer.addFirst(token);
         buf = null;
     }

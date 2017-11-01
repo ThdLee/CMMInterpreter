@@ -1,6 +1,7 @@
 package com.interpreter.analysis;
 
 public enum NonTerminalSymbol {
+    Root,
     Stmt,
     StmtBlock,
     VarDecl,
@@ -10,12 +11,11 @@ public enum NonTerminalSymbol {
     IFStmt,
     WhileStmt,
     BreakStmt,
+    ContinueStmt,
     ReadStmt,
     WriteStmt,
     AssignStmt,
     Value,
-    Array,
-    Constant,
     Expr1,
     Expr2,
     Expr3,
@@ -24,5 +24,4 @@ public enum NonTerminalSymbol {
     Expr6,
     Expr7,
     Expr8,
-    Expr9
 }

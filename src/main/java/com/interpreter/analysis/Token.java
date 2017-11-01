@@ -14,6 +14,7 @@ public class Token {
         add("else");
         add("while");
         add("int");
+        add("string");
         add("bool");
         add("double");
         add("break");
@@ -25,6 +26,9 @@ public class Token {
     final Type type;
     final String value;
 
+    final int line;
+    final int pos;
+
     public Type getType() {
         return type;
     }
@@ -33,12 +37,22 @@ public class Token {
         return value;
     }
 
-    Token(Type type, String value) {
-        this.type = type;
+    Token(Type type, String value, int pos, int line) {
         this.value = value;
         if (KeywordsSet.contains(value)) {
             type = Type.Keyword;
         }
+        this.type = type;
+        this.pos = pos;
+        this.line = line;
+    }
+
+    public int getLine() {
+        return line;
+    }
+
+    public int getPos() {
+        return pos;
     }
 
     @Override

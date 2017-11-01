@@ -7,14 +7,11 @@ import java.util.List;
 
 class SignParser {
     private final static HashSet<String> signSet = new HashSet<String>() {{
-        add("+"); add("-"); add("*"); add("/"); add("%");
+        add("+"); add("-"); add("*"); add("/"); add("%"); add("=");
         add(">"); add("<"); add(">="); add("<="); add("=="); add("!=");
         add("+="); add("-="); add("*="); add("/="); add("%=");
         add("&&"); add("||"); add("!"); add("&&="); add("||=");
-//        add("<<"); add(">>"); add("<<="); add(">>=");
-//        add("&"); add("|"); add("^"); add("&="); add("|="); add("^=");
-//        add("?"); add(":");
-        add("("); add(")"); add("{"); add("}"); add("["); add("]");
+        add("("); add(")"); add("{"); add("}"); add("["); add("]"); add(",");
     }};
     private final static HashSet<Character> signCharSet = new HashSet<>();
 

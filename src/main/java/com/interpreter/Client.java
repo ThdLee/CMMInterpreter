@@ -1,8 +1,8 @@
 package com.interpreter;
 
-import com.interpreter.analysis.Lexer;
-import com.interpreter.analysis.LexerException;
-import com.interpreter.analysis.Token;
+import com.interpreter.analysis.*;
+import com.interpreter.intermediatecode.CodeChunk;
+import com.interpreter.intermediatecode.IntermediateCodeCreator;
 
 import java.io.*;
 
@@ -11,9 +11,11 @@ public class Client {
         File file = new File("/Users/thdlee/Downloads/TestCases/test4_算术运算.cmm");
         Reader reader = new FileReader(file);
         Lexer lexer = new Lexer(reader);
-        for (Token token = lexer.read(); token.getType() != Token.Type.EndSymbol; token = lexer.read()) {
-            System.out.println(token);
-        }
+        Parser parser = new Parser(lexer);
+        AST ast = parser.prog();
+        IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
+        CodeChunk codeChunk = codeCreator.create(ast);
+        System.out.println(codeChunk);
         reader.close();
     }
 }

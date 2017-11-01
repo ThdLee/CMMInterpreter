@@ -1,339 +1,525 @@
 package com.interpreter.analysis;
 
+import com.interpreter.analysis.node.NNode;
+import com.interpreter.analysis.node.Node;
+import com.interpreter.analysis.node.TNode;
+
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Stack;
 
 public class Parser {
     private static final HashSet<String> AssignSignSet = new HashSet<String>() {{
+        add("=");
         add("+="); add("-="); add("*="); add("/="); add("%=");
         add("&&="); add("||=");
     }};
 
-    private Stack<Token> stack;
+    private static final HashSet<String> Expr1SignSet = new HashSet<String>() {{
+        add("||");
+    }};
+    private static final HashSet<String> Expr2SignSet = new HashSet<String>() {{
+        add("&&");
+    }};
+    private static final HashSet<String> Expr3SignSet = new HashSet<String>() {{
+        add("=="); add("!=");
+    }};
+    private static final HashSet<String> Expr4SignSet = new HashSet<String>() {{
+        add(">"); add(">="); add("<"); add("<=");
+    }};
+    private static final HashSet<String> Expr5SignSet = new HashSet<String>() {{
+        add("+"); add("-");
+    }};
+    private static final HashSet<String> Expr6SignSet = new HashSet<String>() {{
+        add("*"); add("/"); add("%");
+    }};
+    private static final HashSet<String> Expr7SignSet = new HashSet<String>() {{
+        add("+"); add("-"); add("!");
+    }};
+
     private Lexer lexer;
 
     private Token cur = null;
     public Parser(Lexer lexer) {
-        this.stack = new Stack<>();
         this.lexer = lexer;
     }
 
-    private Token nextToken() throws IOException, LexerException {
-        if (cur == null) return lexer.read();
-        stack.push(cur);
-        return lexer.read();
+    private Token nextToken() throws IOException {
+        Token token = lexer.read();
+        while (token.type == Token.Type.Space || token.type == Token.Type.Annotation) {
+            token = lexer.read();
+        }
+        return token;
     }
 
-    public void prog() throws IOException, LexerException {
-        ArrayList<AST> list = new ArrayList<>();
+    private boolean needSemicolon;
+    public AST prog() throws IOException {
+        needSemicolon = true;
+
+        AST tree = new AST();
+        NNode root = new NNode(NonTerminalSymbol.Root);
+        tree.root = root;
         cur = nextToken();
         while (cur.type != Token.Type.EndSymbol) {
-            if (cur.type == Token.Type.Annotation) continue;
-            AST tree = new AST();
-            handleStmt(tree);
-            list.add(tree);
-            if (cur.type != Token.Type.Sign || !cur.value.equals(";")) {
-                
-            }
+            NNode stmt = new NNode(NonTerminalSymbol.Stmt);
+            root.addNode(stmt);
+            handleStmt(stmt);
         }
-
+        return tree;
     }
 
-    private void handleStmt(AST tree) throws IOException, LexerException {
-        Node node = new Node(NonTerminalSymbol.Stmt);
-        tree.root = node;
+
+    private void handleStmt(NNode root) throws IOException {
+        NNode node = new NNode();
+        needSemicolon = true;
         if (cur.type == Token.Type.Keyword) {
-            if (cur.value.equals("int") ||
-                    cur.value.equals("double")) {
-                node.setNSymbol(NonTerminalSymbol.VarDecl);
-                handleVarDecl(node);
-            } else if (cur.value.equals("if")) {
-                node.setNSymbol(NonTerminalSymbol.IFStmt);
-                cur = nextToken();
-                handleIfStmt(node);
-            } else if (cur.value.equals("while")) {
-                node.setNSymbol(NonTerminalSymbol.WhileStmt);
-                cur = nextToken();
-                handleWhileStmt(node);
-            } else if (cur.value.equals("read")) {
-
-            } else if (cur.value.equals("write")) {
-
-            } else {
-
+            switch (cur.value) {
+                case "int":
+                case "double":
+                case "string":
+                    node.setSymbol(NonTerminalSymbol.VarDecl);
+                    handleVarDecl(node);
+                    break;
+                case "if":
+                    node.setSymbol(NonTerminalSymbol.IFStmt);
+                    handleIfStmt(node);
+                    break;
+                case "while":
+                    node.setSymbol(NonTerminalSymbol.WhileStmt);
+                    handleWhileStmt(node);
+                    break;
+                case "read":
+                    node.setSymbol(NonTerminalSymbol.ReadStmt);
+                    handleReadStmt(node);
+                    break;
+                case "write":
+                    node.setSymbol(NonTerminalSymbol.WriteStmt);
+                    handleWriteStmt(node);
+                    break;
+                case "break":
+                    node.setSymbol(NonTerminalSymbol.BreakStmt);
+                    handleBreakStmt(node);
+                    break;
+                case "continue":
+                    node.setSymbol(NonTerminalSymbol.ContinueStmt);
+                    handleContinueStmt(node);
+                    break;
+                default:
+                    throw new ParserException(cur);
             }
         } else if (cur.type == Token.Type.Identifier) {
-            node.setNSymbol(NonTerminalSymbol.AssignStmt);
+            node.setSymbol(NonTerminalSymbol.AssignStmt);
             handleAssignStmt(node);
 
         }
+
+        if (needSemicolon) {
+            if (cur.type != Token.Type.NewStatement || !cur.value.equals(";")) {
+                throw new ParserException(cur);
+            }
+            cur = nextToken();
+        }
+        root.addNode(node);
+
     }
 
-    private void handleStmtBlock(Node root) throws IOException, LexerException {
-
-    }
-
-    private void handleVarDecl(Node root) throws IOException, LexerException {
-        Node type = new Node(NonTerminalSymbol.Type);
+    private void handleVarDecl(NNode root) throws IOException {
+        NNode type = new NNode(NonTerminalSymbol.Type);
         handleType(type);
+        root.addNode(type);
 
-        Node varList = new Node(NonTerminalSymbol.VarList);
+        NNode varList = new NNode(NonTerminalSymbol.VarList);
         handleVarList(varList);
-        cur = nextToken();
+        root.addNode(varList);
     }
 
-    private void handleType(Node root) throws IOException, LexerException {
-        Node node = new Node();
+    private void handleType(NNode root) throws IOException {
+        TNode node = new TNode();
         if (cur.value.equals("int")) {
-            node.setTSymbol(TerminalSymbol.Int);
+            node.setSymbol(TerminalSymbol.Int);
         } else if (cur.value.equals("double")) {
-            node.setTSymbol(TerminalSymbol.Double);
+            node.setSymbol(TerminalSymbol.Double);
+        } else if (cur.value.equals("string")) {
+            node.setSymbol(TerminalSymbol.String);
         }
         root.addNode(node);
         cur = nextToken();
         if (cur.type == Token.Type.Sign && cur.value.equals("[")) {
             cur = nextToken();
-            Node index = new Node(TerminalSymbol.Index, cur.getValue());
+            NNode index = new NNode(NonTerminalSymbol.Expr1);
+            root.addNode(index);
+            handleExpr1(index);
 
-            cur = nextToken();
             if (cur.type != Token.Type.Sign || !cur.value.equals("]")) {
-
+                throw new ParserException(cur);
             }
-            root.addNode(node);
+            root.addNode(index);
             cur = nextToken();
         }
     }
 
-    private void handleVarList(Node root) throws IOException, LexerException {
+    private void handleVarList(NNode root) throws IOException {
         if (cur.type != Token.Type.Identifier) {
-
+            throw new ParserException(cur);
         }
-        while (cur.type != Token.Type.Identifier) {
-            Node id = new Node(TerminalSymbol.Identifier);
+        while (cur.type == Token.Type.Identifier) {
+            TNode id = new TNode(TerminalSymbol.Identifier, cur.value);
             root.addNode(id);
 
             cur = nextToken();
             if (cur.type == Token.Type.Sign && cur.value.equals("=")) {
-                Node node = new Node(NonTerminalSymbol.VarDeclAssign);
+                NNode node = new NNode(NonTerminalSymbol.VarDeclAssign);
+                handleVarDeclAssign(node);
                 root.addNode(node);
-                cur = nextToken();
-                handleVarList(node);
-            } else if (cur.type == Token.Type.Sign && cur.value.equals(",")) {
+            }
+            if (cur.type == Token.Type.Sign && cur.value.equals(",")) {
                 cur = nextToken();
             }
         }
 
     }
 
-    private void handleVarDeclAssign(Node root) throws IOException, LexerException {
-        Node sign = new Node(TerminalSymbol.Sign, "=");
+    private void handleVarDeclAssign(NNode root) throws IOException {
+        TNode sign = new TNode(TerminalSymbol.Sign, "=");
         root.addNode(sign);
         cur = nextToken();
 
-        Node value = new Node(NonTerminalSymbol.Expr2);
+        NNode value = new NNode(NonTerminalSymbol.Expr1);
+        handleExpr1(value);
         root.addNode(value);
-        handleExpr2(value);
 
     }
 
-    private void handleIfStmt(Node root) {
+    private void handleIfStmt(NNode root) throws IOException {
+        TNode ifNode = new TNode(TerminalSymbol.If);
+        root.addNode(ifNode);
 
+        cur = nextToken();
+        if (cur.type != Token.Type.Sign || !cur.value.equals("(")) {
+            throw new ParserException(cur);
+        }
+
+        cur = nextToken();
+        NNode expr = new NNode(NonTerminalSymbol.Expr1);
+        handleExpr1(expr);
+        root.addNode(expr);
+
+        if (cur.type != Token.Type.Sign || !cur.value.equals(")")) {
+            throw new ParserException(cur);
+        }
+
+        cur = nextToken();
+        NNode block = new NNode(NonTerminalSymbol.StmtBlock);
+        handleStmtBlock(block);
+        root.addNode(block);
+
+        if (cur.type == Token.Type.Keyword && cur.value.equals("else")) {
+            TNode elseNode = new TNode(TerminalSymbol.Else);
+            root.addNode(elseNode);
+
+            cur = nextToken();
+            NNode elseBlock = new NNode(NonTerminalSymbol.StmtBlock);
+            handleStmtBlock(elseBlock);
+            root.addNode(elseBlock);
+
+        }
     }
 
-    private void handleWhileStmt(Node root) {
+    private void handleWhileStmt(NNode root) throws IOException {
+        TNode whileNode = new TNode(TerminalSymbol.While);
+        root.addNode(whileNode);
 
+        cur = nextToken();
+        if (cur.type != Token.Type.Sign || !cur.value.equals("(")) {
+            throw new ParserException(cur);
+        }
+
+        cur = nextToken();
+        NNode expr = new NNode(NonTerminalSymbol.Expr1);
+        handleExpr1(expr);
+        root.addNode(expr);
+
+        if (cur.type != Token.Type.Sign || !cur.value.equals(")")) {
+            throw new ParserException(cur);
+        }
+
+        cur = nextToken();
+        NNode block = new NNode(NonTerminalSymbol.StmtBlock);
+        handleStmtBlock(block);
+        root.addNode(block);
     }
 
-    private void handleAssignStmt(Node root) throws IOException, LexerException {
-        Node value = new Node(TerminalSymbol.Identifier, cur.value);
+    private void handleStmtBlock(NNode root) throws IOException {
+        if (cur.type != Token.Type.Sign || !cur.value.equals("{")) {
+            throw new ParserException(cur);
+        }
+
+        cur = nextToken();
+        while (cur.type != Token.Type.Sign || !cur.value.equals("}")) {
+            NNode stmt = new NNode(NonTerminalSymbol.Stmt);
+            handleStmt(stmt);
+            root.addNode(stmt);
+        }
+        needSemicolon = false;
+        cur = nextToken();
+    }
+
+    private void handleAssignStmt(NNode root) throws IOException {
+        TNode value = new TNode(TerminalSymbol.Identifier, cur.value);
         root.addNode(value);
 
         cur = nextToken();
         if (cur.type == Token.Type.Sign &&
                 cur.value.equals("[")) {
             cur = nextToken();
-            if (cur.type == Token.Type.Integer) {
-                Node index = new Node(TerminalSymbol.Index, cur.value);
-                root.addNode(index);
-            } else {
+            NNode index = new NNode(NonTerminalSymbol.Expr1);
+            root.addNode(index);
+            handleExpr1(index);
 
-            }
-            cur = nextToken();
             if (cur.type != Token.Type.Sign ||
-                    !cur.value.equals("[")) {
-
+                    !cur.value.equals("]")) {
+                throw new ParserException(cur);
             }
             cur = nextToken();
         }
 
         if (cur.type == Token.Type.Sign &&
                 AssignSignSet.contains(cur.value)) {
-            Node sign = new Node(TerminalSymbol.Sign, cur.value);
+            TNode sign = new TNode(TerminalSymbol.Sign, cur.value);
             root.addNode(sign);
 
             cur = nextToken();
-            Node expr1 = new Node(NonTerminalSymbol.Expr1);
-            root.addNode(expr1);
+            NNode expr1 = new NNode(NonTerminalSymbol.Expr1);
             handleExpr1(expr1);
+            root.addNode(expr1);
         } else {
-
+            throw new ParserException(cur);
         }
 
     }
 
-    private void handleExpr1(Node root) throws IOException, LexerException {
-        Node node1 = new Node(NonTerminalSymbol.Expr2);
-        root.addNode(node1);
+    private void handleExpr1(NNode root) throws IOException {
+        NNode node1 = new NNode(NonTerminalSymbol.Expr2);
         handleExpr2(node1);
+        root.addNode(node1);
 
-        if (cur.type == Token.Type.Sign && cur.value.equals("||")) {
-            Node sign = new Node(TerminalSymbol.Sign, "||");
+        while (cur.type == Token.Type.Sign && Expr1SignSet.contains(cur.value)) {
+            TNode sign = new TNode(TerminalSymbol.Sign, cur.value);
             root.addNode(sign);
 
             cur = nextToken();
-            Node node2 = new Node(NonTerminalSymbol.Expr2);
-            root.addNode(node2);
+            NNode node2 = new NNode(NonTerminalSymbol.Expr2);
             handleExpr2(node2);
+            root.addNode(node2);
         }
     }
-    private void handleExpr2(Node root) throws IOException, LexerException {
-        Node node1 = new Node(NonTerminalSymbol.Expr3);
-        root.addNode(node1);
+    private void handleExpr2(NNode root) throws IOException {
+        NNode node1 = new NNode(NonTerminalSymbol.Expr3);
         handleExpr3(node1);
+        root.addNode(node1);
 
-        if (cur.type == Token.Type.Sign && cur.value.equals("&&")) {
-            Node sign = new Node(TerminalSymbol.Sign, "&&");
+        while (cur.type == Token.Type.Sign && Expr2SignSet.contains(cur.value)) {
+            TNode sign = new TNode(TerminalSymbol.Sign, cur.value);
             root.addNode(sign);
 
             cur = nextToken();
-            Node node2 = new Node(NonTerminalSymbol.Expr3);
-            root.addNode(node2);
+            NNode node2 = new NNode(NonTerminalSymbol.Expr3);
             handleExpr3(node2);
+            root.addNode(node2);
         }
     }
-    private void handleExpr3(Node root) throws IOException, LexerException {
-        Node node1 = new Node(NonTerminalSymbol.Expr4);
-        root.addNode(node1);
+    private void handleExpr3(NNode root) throws IOException {
+        NNode node1 = new NNode(NonTerminalSymbol.Expr4);
         handleExpr4(node1);
+        root.addNode(node1);
 
-        if (cur.type == Token.Type.Sign && (
-                cur.value.equals("==") ||
-                cur.value.equals("!="))) {
-            Node sign = new Node(TerminalSymbol.Sign, cur.value);
+        while (cur.type == Token.Type.Sign && Expr3SignSet.contains(cur.value)) {
+            TNode sign = new TNode(TerminalSymbol.Sign, cur.value);
             root.addNode(sign);
 
             cur = nextToken();
-            Node node2 = new Node(NonTerminalSymbol.Expr4);
-            root.addNode(node2);
+            NNode node2 = new NNode(NonTerminalSymbol.Expr4);
             handleExpr4(node2);
+            root.addNode(node2);
         }
     }
-    private void handleExpr4(Node root) throws IOException, LexerException {
-        Node node1 = new Node(NonTerminalSymbol.Expr5);
-        root.addNode(node1);
+    private void handleExpr4(NNode root) throws IOException {
+        NNode node1 = new NNode(NonTerminalSymbol.Expr5);
         handleExpr5(node1);
+        root.addNode(node1);
 
-        if (cur.type == Token.Type.Sign && (
-                cur.value.equals(">") ||
-                        cur.value.equals(">=") ||
-                        cur.value.equals("<") ||
-                        cur.value.equals("<="))) {
-            Node sign = new Node(TerminalSymbol.Sign, cur.value);
+        while (cur.type == Token.Type.Sign && Expr4SignSet.contains(cur.value)) {
+            TNode sign = new TNode(TerminalSymbol.Sign, cur.value);
             root.addNode(sign);
 
             cur = nextToken();
-            Node node2 = new Node(NonTerminalSymbol.Expr5);
-            root.addNode(node2);
+            NNode node2 = new NNode(NonTerminalSymbol.Expr5);
             handleExpr5(node2);
+            root.addNode(node2);
         }
     }
 
-    private void handleExpr5(Node root) throws IOException, LexerException {
-        Node node1 = new Node(NonTerminalSymbol.Expr6);
-        root.addNode(node1);
+    private void handleExpr5(NNode root) throws IOException {
+        NNode node1 = new NNode(NonTerminalSymbol.Expr6);
         handleExpr6(node1);
-
-        if (cur.type == Token.Type.Sign && (
-                cur.value.equals("+") || cur.value.equals("-"))) {
-            Node sign = new Node(TerminalSymbol.Sign, cur.value);
-            root.addNode(sign);
-
-            cur = nextToken();
-            Node node2 = new Node(NonTerminalSymbol.Expr6);
-            root.addNode(node2);
-            handleExpr6(node2);
-        }
-    }
-
-    private void handleExpr6(Node root) throws IOException, LexerException {
-        Node node1 = new Node(NonTerminalSymbol.Expr7);
         root.addNode(node1);
-        handleExpr7(node1);
 
-        if (cur.type == Token.Type.Sign && (
-                cur.value.equals("*") ||
-                        cur.value.equals("/") ||
-                        cur.value.equals("%"))) {
-            Node sign = new Node(TerminalSymbol.Sign, cur.value);
+        while (cur.type == Token.Type.Sign && Expr5SignSet.contains(cur.value)) {
+            TNode sign = new TNode(TerminalSymbol.Sign, cur.value);
             root.addNode(sign);
 
             cur = nextToken();
-            Node node2 = new Node(NonTerminalSymbol.Expr7);
+            NNode node2 = new NNode(NonTerminalSymbol.Expr6);
+            handleExpr6(node2);
             root.addNode(node2);
-            handleExpr7(node2);
         }
     }
 
-    private void handleExpr7(Node root) throws IOException, LexerException {
-        if (cur.type == Token.Type.Sign && (
-                cur.value.equals("+") ||
-                        cur.value.equals("-") ||
-                        cur.value.equals("!"))) {
-            Node sign = new Node(TerminalSymbol.Sign, cur.value);
+    private void handleExpr6(NNode root) throws IOException {
+        NNode node1 = new NNode(NonTerminalSymbol.Expr7);
+        handleExpr7(node1);
+        root.addNode(node1);
+
+        while (cur.type == Token.Type.Sign && Expr6SignSet.contains(cur.value)) {
+            TNode sign = new TNode(TerminalSymbol.Sign, cur.value);
+            root.addNode(sign);
+
+            cur = nextToken();
+            NNode node2 = new NNode(NonTerminalSymbol.Expr7);
+            handleExpr7(node2);
+            root.addNode(node2);
+        }
+    }
+
+    private void handleExpr7(NNode root) throws IOException {
+        while (cur.type == Token.Type.Sign && Expr7SignSet.contains(cur.value)) {
+            TNode sign = new TNode(TerminalSymbol.Sign, cur.value);
             root.addNode(sign);
 
             cur = nextToken();
         }
 
-        Node node = new Node(NonTerminalSymbol.Expr8);
-        root.addNode(node);
+        NNode node = new NNode(NonTerminalSymbol.Expr8);
         handleExpr8(node);
+        root.addNode(node);
     }
 
-    private void handleExpr8(Node root) throws IOException, LexerException {
+    private void handleExpr8(NNode root) throws IOException {
         if (cur.type == Token.Type.Sign && cur.value.equals("(")) {
             cur = nextToken();
-            Node expr = new Node(NonTerminalSymbol.Expr1);
+            NNode expr = new NNode(NonTerminalSymbol.Expr1);
+            handleExpr1(expr);
             root.addNode(expr);
 
-            cur = nextToken();
-            if (cur.type != Token.Type.Sign || cur.value.equals(")")) {
-
+            if (cur.type != Token.Type.Sign || !cur.value.equals(")")) {
+                throw new ParserException(cur);
             }
+            cur = nextToken();
         } else {
-            Node node = new Node(NonTerminalSymbol.Value);
-            root.addNode(node);
+            NNode node = new NNode(NonTerminalSymbol.Value);
             handleValue(node);
+            root.addNode(node);
         }
     }
 
-    private void handleValue(Node root) throws IOException, LexerException {
-        Node value = new Node();
+    private void handleValue(NNode root) throws IOException {
+        TNode value = new TNode();
         if (cur.type == Token.Type.Identifier) {
-            value.setTSymbol(TerminalSymbol.Identifier);
+            value.setSymbol(TerminalSymbol.Identifier);
+            value.setValue(cur.value);
+            root.addNode(value);
+            cur = nextToken();
+            if (cur.type == Token.Type.Sign && cur.value.equals("[")) {
+                cur = nextToken();
+
+                NNode index = new NNode(NonTerminalSymbol.Expr1);
+                root.addNode(index);
+                handleExpr1(index);
+
+                if (cur.type != Token.Type.Sign || !cur.value.equals("]")) {
+                    throw new ParserException(cur);
+                }
+                root.addNode(index);
+                cur = nextToken();
+            }
+
         } else if (cur.type == Token.Type.Keyword &&
                 (cur.value.equals("true") || cur.value.equals("false"))) {
-            value.setTSymbol(TerminalSymbol.Bool);
+            value.setSymbol(TerminalSymbol.Bool);
+            value.setValue(cur.value);
+            root.addNode(value);
+            cur = nextToken();
         } else if (cur.type == Token.Type.Integer) {
-            value.setTSymbol(TerminalSymbol.Int);
+            value.setSymbol(TerminalSymbol.Int);
+            value.setValue(cur.value);
+            root.addNode(value);
+            cur = nextToken();
         } else if (cur.type == Token.Type.Decimal) {
-            value.setTSymbol(TerminalSymbol.Double);
+            value.setSymbol(TerminalSymbol.Double);
+            value.setValue(cur.value);
+            root.addNode(value);
+            cur = nextToken();
+        } else if (cur.type == Token.Type.String) {
+            value.setSymbol(TerminalSymbol.String);
+            value.setValue(cur.value);
+            root.addNode(value);
+            cur = nextToken();
         } else {
-
+            throw new ParserException(cur);
         }
-        value.setValue(cur.value);
+    }
+
+    private void handleReadStmt(NNode root) throws IOException {
+        TNode readNode = new TNode(TerminalSymbol.Read);
+        root.addNode(readNode);
+
+        cur = nextToken();
+        if (cur.type != Token.Type.Sign || !cur.value.equals("(")) {
+            throw new ParserException(cur);
+        }
+
+        cur = nextToken();
+        NNode expr = new NNode(NonTerminalSymbol.Expr1);
+        handleExpr1(expr);
+        root.addNode(expr);
+
+        if (cur.type != Token.Type.Sign || !cur.value.equals(")")) {
+            throw new ParserException(cur);
+        }
+        cur = nextToken();
+    }
+
+    private void handleWriteStmt(NNode root) throws IOException {
+        TNode writeNode = new TNode(TerminalSymbol.Write);
+        root.addNode(writeNode);
+
+        cur = nextToken();
+        if (cur.type != Token.Type.Sign || !cur.value.equals("(")) {
+            throw new ParserException(cur);
+        }
+
+        cur = nextToken();
+        NNode expr = new NNode(NonTerminalSymbol.Expr1);
+        handleExpr1(expr);
+        root.addNode(expr);
+
+        if (cur.type != Token.Type.Sign || !cur.value.equals(")")) {
+            throw new ParserException(cur);
+        }
+        cur = nextToken();
+    }
+
+    private void handleBreakStmt(NNode root) throws IOException {
+        TNode node = new TNode(TerminalSymbol.Break);
+        root.addNode(node);
+
+        cur = nextToken();
+    }
+
+    private void handleContinueStmt(NNode root) throws IOException {
+        TNode node = new TNode(TerminalSymbol.Continue);
+        root.addNode(node);
+
         cur = nextToken();
     }
 }
