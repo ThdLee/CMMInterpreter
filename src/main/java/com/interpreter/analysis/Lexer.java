@@ -75,6 +75,8 @@ public class Lexer {
     private boolean hasDot = false;
     private boolean annotationOneLine = false;
 
+    private int signOriginPos;
+
     private boolean readChar(char c) throws LexerException {
         boolean moveCursor = true;
         Type type = null;
@@ -86,8 +88,10 @@ public class Lexer {
                 if(inIdentifierSetFirst(c)) {
                     state = State.Identifier;
                 } else if(c == '/') {
+                    signOriginPos = pos;
                     state = State.AnnOrSign;
                 } else if(SignParser.inCharSet(c)) {
+                    signOriginPos = pos;
                     state = State.Sign;
                 } else if(c == '\"' | c == '\'') {
                     state = State.String;
@@ -153,7 +157,8 @@ public class Lexer {
                 } else {
                     List<String> list = SignParser.parse(buf.toString());
                     for(String signStr:list) {
-                        createToken(Type.Sign, signStr);
+                        createTokenForSign(Type.Sign, signStr, signOriginPos);
+                        signOriginPos += signStr.length();
                     }
                     type = null;
                     state = State.Normal;
@@ -233,6 +238,12 @@ public class Lexer {
     }
 
     private void createToken(Type type, String value) {
+        Token token = new Token(type, value, pos, lines);
+        tokenBuffer.addFirst(token);
+        buf = null;
+    }
+
+    private void createTokenForSign(Type type, String value, int pos) {
         Token token = new Token(type, value, pos, lines);
         tokenBuffer.addFirst(token);
         buf = null;

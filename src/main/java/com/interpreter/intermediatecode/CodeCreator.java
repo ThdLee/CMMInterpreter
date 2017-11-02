@@ -48,7 +48,7 @@ class CodeCreator {
                     handleAssignStmt((NNode) node, context);
                     break;
                 default:
-                    throw new IntermediateException("");
+                    throw new IntermediateException("unknown non-terminal symbol '" + n.getSymbol() + "'");
             }
         }
     }
@@ -73,7 +73,7 @@ class CodeCreator {
                 type = PrimaryType.Double;
                 break;
             default:
-                throw new IntermediateException("");
+                throw new IntermediateException("unknown type '" + node.getSymbol() + "'");
         }
         int arrayIndex = 0;
         if (typeNode.getChildren().size() == 2) {
@@ -82,12 +82,12 @@ class CodeCreator {
             handleExpr(n, arrayIndex, context);
         }
 
-        int var = context.variablePool.createIndex();
         for (Node varNode : varListNode.getChildren()) {
+            int var = context.variablePool.createIndex();
             if (varNode instanceof TNode && ((TNode) varNode).getSymbol() == TerminalSymbol.Identifier) {
                 String id = ((TNode) varNode).getValue();
                 if (context.recorder.localContains(id)) {
-                    throw new IntermediateException("");
+                    throw new IntermediateException("'" + id + "' has defined");
                 }
                 if (arrayIndex != 0) {
                     context.chunk.push(Command.Alloc, var, arrayIndex);
@@ -96,13 +96,13 @@ class CodeCreator {
                 } else {
                     context.recorder.define(id, var, type);
                 }
-
             } else if (varNode instanceof NNode) {
                 int val = context.variablePool.createIndex();
                 handleVarDeclAssign((NNode) varNode, val, context);
                 context.chunk.push(Command.Mov, var, val);
                 context.variablePool.freeIndex(val);
             }
+            context.variablePool.freeIndex(var);
         }
 
     }
@@ -176,7 +176,7 @@ class CodeCreator {
         int i = 0;
         TNode idNode = (TNode) root.getChildren().get(i++);
         String id = idNode.getValue();
-        if (!context.recorder.contains(id)) throw new IntermediateException("");
+        if (!context.recorder.contains(id)) throw new IntermediateException("undefined '" + id + "'");
         int res = context.recorder.getVarIndex(id);
 
         Node node = root.getChildren().get(i++);
@@ -247,7 +247,7 @@ class CodeCreator {
                 break;
             }
             default:
-                throw new IntermediateException("");
+                throw new IntermediateException("unknown operation '" + sign.getValue() + "'");
         }
 
     }
@@ -311,7 +311,7 @@ class CodeCreator {
                         context.chunk.push(Command.NotEqual, res, num, res);
                         break;
                     default:
-                        throw new IntermediateException("");
+                        throw new IntermediateException("unknown operation '" + sign.getValue() + "'");
                 }
                 context.variablePool.freeIndex(num);
             }
@@ -335,7 +335,7 @@ class CodeCreator {
                     context.chunk.push(Command.Not, res, res);
                     break;
                 default:
-                    throw new IntermediateException("");
+                    throw new IntermediateException("unknown operation '" + sign.getValue() + "'");
             }
         } else {
             handleExpr8((NNode) node, res, context);
@@ -353,7 +353,7 @@ class CodeCreator {
         TNode node = (TNode) root.getChildren().get(0);
         if (node.getSymbol() == TerminalSymbol.Identifier) {
             if (!context.recorder.contains(node.getValue())) {
-                throw new IntermediateException("no such var: " + node.getValue());
+                throw new IntermediateException("undefined '" + node.getValue() + "'");
             }
             int num = context.recorder.getVarIndex(node.getValue());
             if (root.getChildren().size() == 2) {

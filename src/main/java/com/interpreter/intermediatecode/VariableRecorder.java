@@ -26,6 +26,10 @@ public class VariableRecorder {
         return getVarIndex(variableName) != null;
     }
 
+    int getSize() {
+        return variableMap.size();
+    }
+
     boolean localContains(String variableName) {
         return variableMap.containsKey(variableName);
     }
