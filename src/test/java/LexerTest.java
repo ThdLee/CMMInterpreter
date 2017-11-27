@@ -9,44 +9,44 @@ import java.io.*;
 
 public class LexerTest {
 
-    @Test
-    public void Test1() throws IOException {
-        File file = new File("/Users/thdlee/Downloads/TestCases/error1_ID.cmm");
-        Reader reader = new FileReader(file);
-        Lexer lexer = new Lexer(reader);
-        Parser parser = new Parser(lexer);
-        AST ast = parser.prog();
-        IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
-        CodeChunk codeChunk = codeCreator.create(ast);
-        System.out.println(codeChunk);
-        reader.close();
-    }
-
-    @Test
-    public void Test2() throws IOException {
-        File file = new File("/Users/thdlee/Downloads/TestCases/error2_array.cmm");
-        Reader reader = new FileReader(file);
-        Lexer lexer = new Lexer(reader);
-        Parser parser = new Parser(lexer);
-        AST ast = parser.prog();
-        IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
-        CodeChunk codeChunk = codeCreator.create(ast);
-        System.out.println(codeChunk);
-        reader.close();
-    }
-
-    @Test
-    public void Test3() throws IOException {
-        File file = new File("/Users/thdlee/Downloads/TestCases/error3_comment.cmm");
-        Reader reader = new FileReader(file);
-        Lexer lexer = new Lexer(reader);
-        Parser parser = new Parser(lexer);
-        AST ast = parser.prog();
-        IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
-        CodeChunk codeChunk = codeCreator.create(ast);
-        System.out.println(codeChunk);
-        reader.close();
-    }
+//    @Test
+//    public void Test1() throws IOException {
+//        File file = new File("/Users/thdlee/Downloads/TestCases/error1_ID.cmm");
+//        Reader reader = new FileReader(file);
+//        Lexer lexer = new Lexer(reader);
+//        Parser parser = new Parser(lexer);
+//        AST ast = parser.prog();
+//        IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
+//        CodeChunk codeChunk = codeCreator.create(ast);
+//        System.out.println(codeChunk);
+//        reader.close();
+//    }
+//
+//    @Test
+//    public void Test2() throws IOException {
+//        File file = new File("/Users/thdlee/Downloads/TestCases/error2_array.cmm");
+//        Reader reader = new FileReader(file);
+//        Lexer lexer = new Lexer(reader);
+//        Parser parser = new Parser(lexer);
+//        AST ast = parser.prog();
+//        IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
+//        CodeChunk codeChunk = codeCreator.create(ast);
+//        System.out.println(codeChunk);
+//        reader.close();
+//    }
+//
+//    @Test
+//    public void Test3() throws IOException {
+//        File file = new File("/Users/thdlee/Downloads/TestCases/error3_comment.cmm");
+//        Reader reader = new FileReader(file);
+//        Lexer lexer = new Lexer(reader);
+//        Parser parser = new Parser(lexer);
+//        AST ast = parser.prog();
+//        IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
+//        CodeChunk codeChunk = codeCreator.create(ast);
+//        System.out.println(codeChunk);
+//        reader.close();
+//    }
 
     @Test
     public void Test4() throws IOException {

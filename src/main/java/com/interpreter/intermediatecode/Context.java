@@ -7,6 +7,7 @@ public class Context implements Cloneable {
     PositionPlaceholder positionPlaceholder;
     JumpStack jumpStack;
 
+
     Context() {
         jumpStack = new JumpStack();
         chunk = new CodeChunk();

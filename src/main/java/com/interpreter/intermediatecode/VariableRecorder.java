@@ -35,6 +35,12 @@ public class VariableRecorder {
     }
 
     void define(String variableName, int varIndex, PrimaryType type) {
+        if (variableMap.containsKey(variableName)) {
+            PrimaryType oldType = typeMap.get(variableName);
+            if (oldType != type) {
+                throw new IntermediateException("");
+            }
+        }
         variableMap.put(variableName, varIndex);
         typeMap.put(variableName, type);
     }

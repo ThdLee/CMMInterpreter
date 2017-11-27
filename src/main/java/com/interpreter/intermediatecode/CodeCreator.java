@@ -90,9 +90,9 @@ class CodeCreator {
                     throw new IntermediateException("'" + id + "' has defined");
                 }
                 if (arrayIndex != 0) {
-                    context.chunk.push(Command.Alloc, var, arrayIndex);
+                    context.chunk.push(Command.NewArray, var, arrayIndex);
                     context.variablePool.freeIndex(arrayIndex);
-                    context.recorder.define(id, var, PrimaryType.Array);
+                    context.recorder.define(id, var, type);
                 } else {
                     context.recorder.define(id, var, type);
                 }
@@ -102,7 +102,6 @@ class CodeCreator {
                 context.chunk.push(Command.Mov, var, val);
                 context.variablePool.freeIndex(val);
             }
-            context.variablePool.freeIndex(var);
         }
 
     }
@@ -112,6 +111,7 @@ class CodeCreator {
     }
     private void handleIFStmt(NNode root, Context context) {
         int endHolder = context.positionPlaceholder.createPosition();
+
         NNode condition = (NNode) root.getChildren().get(1);
         int var = context.variablePool.createIndex();
         handleExpr(condition, var, context);
@@ -127,7 +127,7 @@ class CodeCreator {
             Context elseChildContext = context.link();
             handleStmtBlock(elseNode, elseChildContext);
             context.positionPlaceholder.setPosition(endHolder, context.chunk.getCurrentPostion());
-        } else {
+        }  {
             context.chunk.push(Command.JmpUnless, endHolder, var);
             Context childContext = context.link();
             NNode node = (NNode) root.getChildren().get(2);
@@ -141,16 +141,26 @@ class CodeCreator {
         handleStmt(node, context);
     }
     private void handleWhileStmt(NNode root, Context context) {
+        int checkConditionLocation = context.positionPlaceholder.createPosition();
         int endHolder = context.positionPlaceholder.createPosition();
-        NNode condition = (NNode) root.getChildren().get(1);
-        int var = context.variablePool.createIndex();
-        handleExpr(condition, var, context);
-        context.chunk.push(Command.Loop, endHolder, var);
+
+        context.jumpStack.push(endHolder, checkConditionLocation);
+
         Context childContext = context.link();
+        childContext.positionPlaceholder.setPosition(checkConditionLocation, childContext.chunk.getCurrentPostion());
+        NNode condition = (NNode) root.getChildren().get(1);
+        int var = childContext.variablePool.createIndex();
+        handleExpr(condition, var, context);
+        childContext.variablePool.freeIndex(var);
+        childContext.chunk.push(Command.JmpUnless, endHolder, var);
         NNode node = (NNode) root.getChildren().get(2);
+
         handleStmtBlock(node, childContext);
+        context.positionPlaceholder.setPosition(endHolder, childContext.chunk.getCurrentPostion());
+        context.jumpStack.pop();
+        context.chunk.push(Command.Jmp, checkConditionLocation);
         context.positionPlaceholder.setPosition(endHolder, context.chunk.getCurrentPostion());
-        context.variablePool.freeIndex(var);
+
     }
     private void handleBreakStmt(NNode root, Context context) {
         context.chunk.push(Command.Jmp, context.jumpStack.getCurrentBreakLocation());
@@ -272,43 +282,43 @@ class CodeCreator {
                 handleExpr(node, num, context);
                 switch (sign.getValue()) {
                     case "+":
-                        context.chunk.push(Command.Add, res, num, res);
+                        context.chunk.push(Command.Add, res, num);
                         break;
                     case "-":
-                        context.chunk.push(Command.Sub, res, num, res);
+                        context.chunk.push(Command.Sub, res, num);
                         break;
                     case "*":
-                        context.chunk.push(Command.Mul, res, num, res);
+                        context.chunk.push(Command.Mul, res, num);
                         break;
                     case "/":
-                        context.chunk.push(Command.Div, res, num, res);
+                        context.chunk.push(Command.Div, res, num);
                         break;
                     case "%":
-                        context.chunk.push(Command.Mod, res, num, res);
+                        context.chunk.push(Command.Mod, res, num);
                         break;
                     case ">":
-                        context.chunk.push(Command.Gt, res, num, res);
+                        context.chunk.push(Command.Gt, res, num);
                         break;
                     case ">=":
-                        context.chunk.push(Command.Gte, res, num, res);
+                        context.chunk.push(Command.Gte, res, num);
                         break;
                     case "<":
-                        context.chunk.push(Command.Lt, res, num, res);
+                        context.chunk.push(Command.Lt, res, num);
                         break;
                     case "<=":
-                        context.chunk.push(Command.Lte, res, num, res);
+                        context.chunk.push(Command.Lte, res, num);
                         break;
                     case "&&":
-                        context.chunk.push(Command.And, res, num, res);
+                        context.chunk.push(Command.And, res, num);
                         break;
                     case "||":
-                        context.chunk.push(Command.Or, res, num, res);
+                        context.chunk.push(Command.Or, res, num);
                         break;
                     case "==":
-                        context.chunk.push(Command.Equal, res, num, res);
+                        context.chunk.push(Command.Equal, res, num);
                         break;
                     case "!=":
-                        context.chunk.push(Command.NotEqual, res, num, res);
+                        context.chunk.push(Command.NotEqual, res, num);
                         break;
                     default:
                         throw new IntermediateException("unknown operation '" + sign.getValue() + "'");

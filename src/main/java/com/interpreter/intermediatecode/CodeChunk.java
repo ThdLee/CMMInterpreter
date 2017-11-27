@@ -24,7 +24,7 @@ public class CodeChunk {
 
         Jmp, JmpUnless, Loop,
         Write, Read,
-        Push, Pop, Alloc, Get
+        NewArray, Get
     }
 
     public static class Code {
@@ -32,7 +32,6 @@ public class CodeChunk {
         Command command;
         int num1;
         int num2;
-        int res;
         ImmediateNumber immediateNumber;
 
         Code() {}
@@ -49,9 +48,6 @@ public class CodeChunk {
             return num2;
         }
 
-        public int getRes() {
-            return res;
-        }
 
         public ImmediateNumber getImmediateNumber() {
             return immediateNumber;
@@ -65,8 +61,6 @@ public class CodeChunk {
             else str.append(num1).append(", ");
             if (num2 == 0) str.append("_, ");
             else str.append(num2).append(", ");
-            if (res == 0) str.append("_");
-            else str.append(res);
             if(immediateNumber != null) {
                 if (immediateNumber.type == ImmediateType.String) {
                     str.append("  <<  \"").append(immediateNumber).append("\"");
@@ -125,34 +119,33 @@ public class CodeChunk {
         }
     }
 
-    private void push(Command command, int num1, int num2, int res, ImmediateNumber immediateNumber) {
+    private void push(Command command, int num1, int num2, ImmediateNumber immediateNumber) {
         Code code = new Code();
         code.command = command;
-        code.res = res;
         code.num1 = num1;
         code.num2 = num2;
         code.immediateNumber = immediateNumber;
         container.add(code);
     }
 
-    void push(Command command, int num1, int num2, int res) {
-        push(command, num1, num2, res, null);
+    void push(Command command, int num1, int num2, int num3) {
+        push(command, num1, num2, null);
     }
 
-    void push(Command command, int num1, int res) {
-        push(command, num1, 0, res,null);
+    void push(Command command, int num1, int num2) {
+        push(command, num1, num2,null);
     }
 
     void push(Command command, int num1) {
-        push(command, num1, 0, 0, null);
+        push(command, num1, 0, null);
     }
 
     void push(Command command) {
-        push(command, 0, 0, 0, null);
+        push(command, 0, 0, null);
     }
 
     void push(Command command, int num1, ImmediateNumber immediateNumber) {
-        push(command, num1, 0, 0, immediateNumber);
+        push(command, num1, 0, immediateNumber);
     }
 
     void push(Code code) {

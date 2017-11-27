@@ -12,7 +12,6 @@ public enum TerminalSymbol {
     Write,
     Read,
     Sign,
-    Index,
     String,
     Identifier,
 }
