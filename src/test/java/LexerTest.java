@@ -3,9 +3,11 @@ import com.interpreter.analysis.Lexer;
 import com.interpreter.analysis.Parser;
 import com.interpreter.intermediatecode.CodeChunk;
 import com.interpreter.intermediatecode.IntermediateCodeCreator;
+import com.interpreter.virtualmachine.Array;
 import org.junit.Test;
 
 import java.io.*;
+import java.util.ArrayList;
 
 public class LexerTest {
 
@@ -166,5 +168,6 @@ public class LexerTest {
         System.out.println(codeChunk);
         reader.close();
     }
+
 
 }

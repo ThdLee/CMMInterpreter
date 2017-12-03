@@ -10,11 +10,14 @@ public class CodeChunk {
     public Code getCodeByLine(int line) {
         return container.get(line);
     }
+
     int getCurrentPostion() {
         return container.size();
     }
 
-
+    public int getSize() {
+        return container.size();
+    }
     public enum Command {
         Mov,
         Add, Sub, Mul, Div, Mod, Opposite,

@@ -37,15 +37,15 @@ public class Value {
     }
 
     public Value(int value) {
-        this(PrimaryType.Int, value, 0.0, false, null, null);
+        this(PrimaryType.Int, value, 0.0, false, "", null);
     }
 
     public Value(double value) {
-        this(PrimaryType.Double, 0, value, false, null, null);
+        this(PrimaryType.Double, 0, value, false, "", null);
     }
 
     public Value(boolean value) {
-        this(PrimaryType.Bool, 0, 0.0, value, null, null);
+        this(PrimaryType.Bool, 0, 0.0, value, "", null);
     }
 
     public Value(String str) {
@@ -53,7 +53,11 @@ public class Value {
     }
 
     public Value(Array arr) {
-        this(PrimaryType.Array, 0, 0.0, false, null, arr);
+        this(PrimaryType.Array, 0, 0.0, false, "", arr);
+    }
+
+    public Value(PrimaryType type) {
+        this(type, 0, 0.0, false, "", null);
     }
 
     public boolean convertToBool() {

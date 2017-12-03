@@ -92,7 +92,7 @@ class CodeCreator {
                 if (arrayIndex != 0) {
                     context.chunk.push(Command.NewArray, var, arrayIndex);
                     context.variablePool.freeIndex(arrayIndex);
-                    context.recorder.define(id, var, type);
+                    context.recorder.define(id, var, PrimaryType.Array, type);
                 } else {
                     context.recorder.define(id, var, type);
                 }

@@ -3,6 +3,7 @@ package com.interpreter.virtualmachine;
 import com.interpreter.intermediatecode.CodeChunk;
 import com.interpreter.intermediatecode.CodeChunk.*;
 import com.interpreter.intermediatecode.PrimaryType;
+import com.interpreter.virtualmachine.DataChunk.Package;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -15,6 +16,14 @@ public class Interpreter {
 
     Interpreter(Runtime runtime) {
         this.runtime = runtime;
+    }
+
+    public int run(int line, Code code, DataChunk dataChunk) {
+        CommandInterpreter interpreter = commandMap.get(code.getCommand());
+        if (interpreter != null) {
+            return interpreter.run(this, line, code, dataChunk);
+        }
+        throw new RuntimeException("unknown command " + code.getCommand());
     }
 
     private interface CommandInterpreter{
@@ -38,17 +47,36 @@ public class Interpreter {
         });
 
         M.put(Command.Write, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
-            return code.getNum1();
+            Value value = dataChunk.getData(code.getNum1());
+            // TODO
+            return  line + 1;
         });
 
-        M.put(Command.Read, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
-            return code.getNum1();
+        M.put(Command.Write, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
+            Value value = dataChunk.getData(code.getNum1());
+            self.runtime.out.println(value);
+            return  line + 1;
         });
 
         M.put(Command.NewArray, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
             int length = code.getNum2();
-            Array array = new Array(length);
+            // TODO
+            Array array = new Array(length, PrimaryType.Array);
             dataChunk.setData(code.getNum1(), new Value(array));
+            return line + 1;
+        });
+
+        M.put(Command.Get, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
+            Value index = dataChunk.getData(code.getNum2());
+            if (index.type != PrimaryType.Int) {
+                throw new RuntimeException("array index cannot be '" + index + "'");
+            }
+            Value value = dataChunk.getData(code.getNum1());
+            if (value.type != PrimaryType.Array) {
+                throw new RuntimeException("'" + value + "' is not array type");
+            }
+            Array array = value.arrValue;
+            dataChunk.setData(code.getNum1(), array.getElement(index.intValue));
             return line + 1;
         });
 
