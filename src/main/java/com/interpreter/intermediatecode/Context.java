@@ -29,5 +29,12 @@ public class Context implements Cloneable {
         return new Context(this);
     }
 
+    public VariableRecorder getRecorder() {
+        return recorder;
+    }
+
+    public CodeChunk getChunk() {
+        return chunk;
+    }
 
 }

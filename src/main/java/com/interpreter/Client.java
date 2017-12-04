@@ -18,7 +18,7 @@ public class Client {
         Parser parser = new Parser(lexer);
         AST ast = parser.prog();
         IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
-        CodeChunk codeChunk = codeCreator.create(ast);
+        CodeChunk codeChunk = codeCreator.create(ast).getChunk();
         System.out.println(codeChunk);
         reader.close();
     }

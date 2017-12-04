@@ -1,25 +1,25 @@
 package com.interpreter.virtualmachine;
 
 import com.interpreter.intermediatecode.PrimaryType;
-import com.interpreter.virtualmachine.DataChunk.Package;
 
 import java.util.ArrayList;
 
 public class Array {
-    private ArrayList<Package> array;
+    private ArrayList<Value> array;
 
     public Array(int size, PrimaryType type) {
         array = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            Package pack = new Package();
-            pack.value = new Value(type);
-            array.set(i, pack);
+            array.add(new Value(type));
         }
     }
 
-    public Package getElement(int index) {
+    public Value getElement(int index) {
         return array.get(index);
     }
 
+    public void setElement(int index, Value value) {
+        array.set(index, value);
+    }
 
 }

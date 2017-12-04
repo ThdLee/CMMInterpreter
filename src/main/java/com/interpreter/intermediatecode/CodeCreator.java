@@ -75,24 +75,26 @@ class CodeCreator {
             default:
                 throw new IntermediateException("unknown type '" + node.getSymbol() + "'");
         }
-        int arrayIndex = 0;
-        if (typeNode.getChildren().size() == 2) {
+        int arrayIndex = Integer.MAX_VALUE;
+        if (typeNode.getChildren().size() >= 2) {
             NNode n = (NNode) typeNode.getChildren().get(1);
             arrayIndex = context.variablePool.createIndex();
             handleExpr(n, arrayIndex, context);
         }
 
+
         for (Node varNode : varListNode.getChildren()) {
-            int var = context.variablePool.createIndex();
+            int var = 0;
             if (varNode instanceof TNode && ((TNode) varNode).getSymbol() == TerminalSymbol.Identifier) {
+                var = context.variablePool.createIndex();
                 String id = ((TNode) varNode).getValue();
                 if (context.recorder.localContains(id)) {
                     throw new IntermediateException("'" + id + "' has defined");
                 }
-                if (arrayIndex != 0) {
+                if (arrayIndex != Integer.MAX_VALUE) {
                     context.chunk.push(Command.NewArray, var, arrayIndex);
-                    context.variablePool.freeIndex(arrayIndex);
                     context.recorder.define(id, var, PrimaryType.Array, type);
+                    context.variablePool.freeIndex(arrayIndex);
                 } else {
                     context.recorder.define(id, var, type);
                 }
@@ -127,7 +129,7 @@ class CodeCreator {
             Context elseChildContext = context.link();
             handleStmtBlock(elseNode, elseChildContext);
             context.positionPlaceholder.setPosition(endHolder, context.chunk.getCurrentPostion());
-        }  {
+        } else  {
             context.chunk.push(Command.JmpUnless, endHolder, var);
             Context childContext = context.link();
             NNode node = (NNode) root.getChildren().get(2);
@@ -137,8 +139,9 @@ class CodeCreator {
         context.variablePool.freeIndex(var);
     }
     private void handleStmtBlock(NNode root, Context context) {
-        NNode node = (NNode) root.getChildren().get(0);
-        handleStmt(node, context);
+        for (Node node : root.getChildren()) {
+            handleStmt((NNode) node, context);
+        }
     }
     private void handleWhileStmt(NNode root, Context context) {
         int checkConditionLocation = context.positionPlaceholder.createPosition();
@@ -187,14 +190,15 @@ class CodeCreator {
         TNode idNode = (TNode) root.getChildren().get(i++);
         String id = idNode.getValue();
         if (!context.recorder.contains(id)) throw new IntermediateException("undefined '" + id + "'");
-        int res = context.recorder.getVarIndex(id);
 
+        int res = context.variablePool.createIndex();
         Node node = root.getChildren().get(i++);
+        boolean hasIndex = false;
+        int index = 0;
         if (node instanceof NNode) {
-            int num = context.variablePool.createIndex();
-            handleExpr((NNode) node, num, context);
-            context.chunk.push(Command.Get, res, num);
-            context.variablePool.freeIndex(num);
+            hasIndex = true;
+            index = context.variablePool.createIndex();
+            handleExpr((NNode) node, index, context);
             node = root.getChildren().get(i++);
         }
         TNode sign = (TNode) node;
@@ -202,62 +206,71 @@ class CodeCreator {
         switch (sign.getValue()) {
             case "=": {
                 int num = context.variablePool.createIndex();
-                handleExpr(expr, res, context);
+                handleExpr(expr, num, context);
                 context.chunk.push(Command.Mov, res, num);
                 context.variablePool.freeIndex(num);
                 break;
             }
             case "+=": {
                 int num = context.variablePool.createIndex();
-                handleExpr(expr, res, context);
-                context.chunk.push(Command.Add, res, num, res);
+                handleExpr(expr, num, context);
+                context.chunk.push(Command.Add, res, num);
                 context.variablePool.freeIndex(num);
                 break;
             }
             case "-=": {
                 int num = context.variablePool.createIndex();
-                handleExpr(expr, res, context);
-                context.chunk.push(Command.Sub, res, num, res);
+                handleExpr(expr, num, context);
+                context.chunk.push(Command.Sub, res, num);
                 context.variablePool.freeIndex(num);
                 break;
             }
             case "*=": {
                 int num = context.variablePool.createIndex();
-                handleExpr(expr, res, context);
-                context.chunk.push(Command.Mul, res, num, res);
+                handleExpr(expr, num, context);
+                context.chunk.push(Command.Mul, res, num);
                 context.variablePool.freeIndex(num);
                 break;
             }
             case "/=": {
                 int num = context.variablePool.createIndex();
-                handleExpr(expr, res, context);
-                context.chunk.push(Command.Div, res, num, res);
+                handleExpr(expr, num, context);
+                context.chunk.push(Command.Div, res, num);
                 context.variablePool.freeIndex(num);
                 break;
             }
             case "%=": {
                 int num = context.variablePool.createIndex();
-                handleExpr(expr, res, context);
-                context.chunk.push(Command.Mod, res, num, res);
+                handleExpr(expr, num, context);
+                context.chunk.push(Command.Mod, res, num);
                 context.variablePool.freeIndex(num);
                 break;
             }
             case "&&=": {
                 int num = context.variablePool.createIndex();
-                handleExpr(expr, res, context);
-                context.chunk.push(Command.And, res, num, res);
+                handleExpr(expr, num, context);
+                context.chunk.push(Command.And, res, num);
                 context.variablePool.freeIndex(num);
                 break;
             }
             case "||=": {
                 int num = context.variablePool.createIndex();
-                handleExpr(expr, res, context);
-                context.chunk.push(Command.Or, res, num, res);
+                handleExpr(expr, num, context);
+                context.chunk.push(Command.Or, res, num);
                 context.variablePool.freeIndex(num);
                 break;
             }
             default:
                 throw new IntermediateException("unknown operation '" + sign.getValue() + "'");
+        }
+        int var = context.recorder.getVarIndex(id);
+        if (hasIndex) {
+            context.chunk.push(Command.Set, var, res, index);
+            context.variablePool.freeIndex(res);
+            context.variablePool.freeIndex(index);
+        } else {
+            context.chunk.push(Command.Mov, var, res);
+            context.variablePool.freeIndex(res);
         }
 
     }
@@ -365,15 +378,14 @@ class CodeCreator {
             if (!context.recorder.contains(node.getValue())) {
                 throw new IntermediateException("undefined '" + node.getValue() + "'");
             }
-            int num = context.recorder.getVarIndex(node.getValue());
             if (root.getChildren().size() == 2) {
                 NNode index = (NNode) root.getChildren().get(1);
-                int n = context.variablePool.createIndex();
-                handleExpr(index, n, context);
-                context.chunk.push(Command.Get, num, n);
-                context.variablePool.freeIndex(n);
+                int i = context.variablePool.createIndex();
+                int num = context.recorder.getVarIndex(node.getValue());
+                handleExpr(index, i, context);
+                context.chunk.push(Command.Get, res, num, i);
+                context.variablePool.freeIndex(i);
             }
-            context.chunk.push(Command.Mov, res, num);
         } else {
             ImmediateNumber number = new ImmediateNumber();
             switch (node.getSymbol()) {

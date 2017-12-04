@@ -1,26 +1,27 @@
 package com.interpreter.virtualmachine;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class DataChunk {
-    static public class Package {
-        Value value;
-
-    }
-
-
-    private final List<Package> dataArray = new ArrayList<>();
+    private final List<Value> dataArray = new ArrayList<>();
 
     public void setData(int position, Value value) {
-        dataArray.get(position).value = value;
-    }
-
-    public void setData(int position, Package pack) {
-        dataArray.set(position, pack);
+        handlePosition(position);
+        dataArray.set(position, value);
     }
 
     public Value getData(int position) {
-        return dataArray.get(position).value;
+        return dataArray.get(position);
+    }
+
+    private void handlePosition(int position) {
+        if (position >= dataArray.size()) {
+            int needCount = position - dataArray.size() + 1;
+            for (int i=0; i<needCount; ++i) {
+                dataArray.add(null);
+            }
+        }
     }
 }

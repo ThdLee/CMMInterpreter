@@ -11,23 +11,10 @@ public class VariableRecorder {
     static class VariableInfo {
         private Integer register;
         private PrimaryType type;
-        private PrimaryType elemType;
 
         public VariableInfo(int register, PrimaryType type) {
             this.register = register;
-            if (type == PrimaryType.Array) {
-                throw new IntermediateException(type + " need element type");
-            }
             this.type = type;
-        }
-
-        public VariableInfo(int register, PrimaryType type, PrimaryType elemType) {
-            this.register = register;
-            if (type != PrimaryType.Array) {
-                throw new IntermediateException(type + " doesn't need element type");
-            }
-            this.type = type;
-            this.elemType = elemType;
         }
 
         public Integer getRegister() {
@@ -38,12 +25,10 @@ public class VariableRecorder {
             return type;
         }
 
-        public PrimaryType getElemType() {
-            return elemType;
-        }
     }
 
     private final Map<String, VariableInfo> variableMap = new LinkedHashMap<>();
+    private final Map<Integer, PrimaryType> typeMap = new HashMap<>();
 
     private final VariableRecorder parent;
 
@@ -76,15 +61,13 @@ public class VariableRecorder {
     }
 
     void define(String variableName, int varIndex, PrimaryType type, PrimaryType elemType) {
-        VariableInfo info = variableMap.get(variableName);
         if (variableMap.containsKey(variableName)) {
             throw new IntermediateException("'" + variableName + "' has defined");
         }
         VariableInfo newInfo;
+        newInfo = new VariableInfo(varIndex, type);
         if (type == PrimaryType.Array) {
-            newInfo = new VariableInfo(varIndex, type, elemType);
-        } else {
-            newInfo = new VariableInfo(varIndex, type);
+            typeMap.put(varIndex, elemType);
         }
         variableMap.put(variableName, newInfo);
     }
@@ -96,5 +79,9 @@ public class VariableRecorder {
             varIndex = parent.getVarIndex(variableName);
         }
         return varIndex;
+    }
+
+    public PrimaryType getArrayType(int varIndex) {
+        return typeMap.get(varIndex);
     }
 }

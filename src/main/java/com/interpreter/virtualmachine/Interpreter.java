@@ -3,11 +3,11 @@ package com.interpreter.virtualmachine;
 import com.interpreter.intermediatecode.CodeChunk;
 import com.interpreter.intermediatecode.CodeChunk.*;
 import com.interpreter.intermediatecode.PrimaryType;
-import com.interpreter.virtualmachine.DataChunk.Package;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Scanner;
 
 public class Interpreter {
 
@@ -46,9 +46,38 @@ public class Interpreter {
             return nextLine;
         });
 
-        M.put(Command.Write, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
+        M.put(Command.Read, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
             Value value = dataChunk.getData(code.getNum1());
-            // TODO
+            Scanner scanner = new Scanner(self.runtime.in);
+            String v = "";
+            if (scanner.hasNext()) {
+                v = scanner.next();
+            } else {
+                throw new RuntimeException();
+            }
+            Value res = null;
+            try {
+                switch (value.type) {
+                    case Int:
+                        res = new Value(Integer.parseInt(v));
+                        break;
+                    case Double:
+                        res = new Value(Double.parseDouble(v));
+                        break;
+                    case Bool:
+                        res = new Value(Boolean.parseBoolean(v));
+                        break;
+                    case String:
+                        res = new Value(v);
+                        break;
+                    case Array:
+                        throw new RuntimeException("cannot input array type");
+                }
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("'" + v + "' is not a " + value.type);
+            }
+            dataChunk.setData(code.getNum1(), res);
+            scanner.close();
             return  line + 1;
         });
 
@@ -59,15 +88,35 @@ public class Interpreter {
         });
 
         M.put(Command.NewArray, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
-            int length = code.getNum2();
-            // TODO
-            Array array = new Array(length, PrimaryType.Array);
+            Value length = dataChunk.getData(code.getNum2());
+            if (length.type != PrimaryType.Int) {
+                throw new RuntimeException("index should be int");
+            }
+            PrimaryType elemType = self.runtime.recorder.getArrayType(code.getNum1());
+            if (elemType == null) {
+                throw new RuntimeException("array has not defined");
+            }
+            Array array = new Array(length.intValue, elemType);
             dataChunk.setData(code.getNum1(), new Value(array));
             return line + 1;
         });
 
         M.put(Command.Get, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
-            Value index = dataChunk.getData(code.getNum2());
+            Value index = dataChunk.getData(code.getNum3());
+            if (index.type != PrimaryType.Int) {
+                throw new RuntimeException("array index cannot be '" + index + "'");
+            }
+            Value value = dataChunk.getData(code.getNum2());
+            if (value.type != PrimaryType.Array) {
+                throw new RuntimeException("'" + value + "' is not array type");
+            }
+            Array array = value.arrValue;
+            dataChunk.setData(code.getNum1(), array.getElement(index.intValue));
+            return line + 1;
+        });
+
+        M.put(Command.Set, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
+            Value index = dataChunk.getData(code.getNum3());
             if (index.type != PrimaryType.Int) {
                 throw new RuntimeException("array index cannot be '" + index + "'");
             }
@@ -76,7 +125,15 @@ public class Interpreter {
                 throw new RuntimeException("'" + value + "' is not array type");
             }
             Array array = value.arrValue;
-            dataChunk.setData(code.getNum1(), array.getElement(index.intValue));
+            array.setElement(index.intValue, dataChunk.getData(code.getNum2()));
+            return line + 1;
+        });
+
+        M.put(Command.Mov, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
+            ImmediateNumber immediateNumber = code.getImmediateNumber();
+            Value value = immediateNumber == null ? dataChunk.getData(code.getNum2()) :
+                    new Value(immediateNumber);
+            dataChunk.setData(code.getNum1(), value);
             return line + 1;
         });
 

@@ -4,7 +4,7 @@ import java.util.LinkedList;
 
 public class LocalVariablePool {
 
-    private int nextIndex = 1;
+    private int nextIndex = 0;
     private LinkedList<Integer> indexPool = new LinkedList<>();
 
     int createIndex() {

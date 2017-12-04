@@ -1,6 +1,7 @@
 package com.interpreter.virtualmachine;
 
 import com.interpreter.intermediatecode.CodeChunk;
+import com.interpreter.intermediatecode.VariableRecorder;
 
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -9,13 +10,17 @@ public class Runtime {
     private CodeChunk codeChunk;
     private DataChunk dataChunk;
 
+    CodeChunk.Code code;
+    final VariableRecorder recorder;
+
     final PrintStream out;
     final InputStream in;
 
     private final Interpreter interpreter;
-    public Runtime(InputStream in, PrintStream out) {
+    public Runtime(InputStream in, PrintStream out, VariableRecorder recorder) {
         this.in = in;
         this.out = out;
+        this.recorder = recorder;
         this.interpreter = new Interpreter(this);
     }
 
@@ -25,7 +30,7 @@ public class Runtime {
         int nextRunLine = 0;
 
         while (nextRunLine < runCodeChunk.getSize()) {
-            CodeChunk.Code code = runCodeChunk.getCodeByLine(nextRunLine);
+            code = runCodeChunk.getCodeByLine(nextRunLine);
             nextRunLine = interpreter.run(nextRunLine, code, dataChunk);
         }
     }

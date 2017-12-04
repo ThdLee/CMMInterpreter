@@ -1,14 +1,20 @@
 package com.interpreter.intermediatecode;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
-public class CodeChunk {
+public class CodeChunk implements Iterable<CodeChunk.Code> {
 
     private final List<Code> container = new ArrayList<>();
 
     public Code getCodeByLine(int line) {
         return container.get(line);
+    }
+
+    @Override
+    public Iterator<Code> iterator() {
+        return container.iterator();
     }
 
     int getCurrentPostion() {
@@ -25,9 +31,9 @@ public class CodeChunk {
         Not, And, Or,
         Gt, Gte, Lt, Lte, Equal, NotEqual,
 
-        Jmp, JmpUnless, Loop,
+        Jmp, JmpUnless,
         Write, Read,
-        NewArray, Get
+        NewArray, Get, Set
     }
 
     public static class Code {
@@ -35,6 +41,7 @@ public class CodeChunk {
         Command command;
         int num1;
         int num2;
+        int num3;
         ImmediateNumber immediateNumber;
 
         Code() {}
@@ -51,6 +58,9 @@ public class CodeChunk {
             return num2;
         }
 
+        public int getNum3() {
+            return num3;
+        }
 
         public ImmediateNumber getImmediateNumber() {
             return immediateNumber;
@@ -60,10 +70,7 @@ public class CodeChunk {
         public String toString() {
             StringBuilder str = new StringBuilder();
             str.append(String.format("%10s", command)).append("   ");
-            if (num1 == 0) str.append("_, ");
-            else str.append(num1).append(", ");
-            if (num2 == 0) str.append("_, ");
-            else str.append(num2).append(", ");
+            str.append(num1).append(", ").append(num2).append(", ").append(num3);
             if(immediateNumber != null) {
                 if (immediateNumber.type == ImmediateType.String) {
                     str.append("  <<  \"").append(immediateNumber).append("\"");
@@ -122,33 +129,34 @@ public class CodeChunk {
         }
     }
 
-    private void push(Command command, int num1, int num2, ImmediateNumber immediateNumber) {
+    private void push(Command command, int num1, int num2, int num3, ImmediateNumber immediateNumber) {
         Code code = new Code();
         code.command = command;
         code.num1 = num1;
         code.num2 = num2;
+        code.num3 = num3;
         code.immediateNumber = immediateNumber;
         container.add(code);
     }
 
     void push(Command command, int num1, int num2, int num3) {
-        push(command, num1, num2, null);
+        push(command, num1, num2, num3, null);
     }
 
     void push(Command command, int num1, int num2) {
-        push(command, num1, num2,null);
+        push(command, num1, num2, 0, null);
     }
 
     void push(Command command, int num1) {
-        push(command, num1, 0, null);
+        push(command, num1, 0, 0, null);
     }
 
     void push(Command command) {
-        push(command, 0, 0, null);
+        push(command, 0, 0, 0, null);
     }
 
     void push(Command command, int num1, ImmediateNumber immediateNumber) {
-        push(command, num1, 0, immediateNumber);
+        push(command, num1, 0, 0, immediateNumber);
     }
 
     void push(Code code) {
