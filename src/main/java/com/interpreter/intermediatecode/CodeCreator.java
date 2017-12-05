@@ -83,8 +83,9 @@ class CodeCreator {
         }
 
 
-        for (Node varNode : varListNode.getChildren()) {
-            int var = 0;
+        for (int i = 0; i < varListNode.getChildren().size(); i++) {
+            int var = -1;
+            Node varNode = varListNode.getChildren().get(i);
             if (varNode instanceof TNode && ((TNode) varNode).getSymbol() == TerminalSymbol.Identifier) {
                 var = context.variablePool.createIndex();
                 String id = ((TNode) varNode).getValue();
@@ -93,16 +94,20 @@ class CodeCreator {
                 }
                 if (arrayIndex != Integer.MAX_VALUE) {
                     context.chunk.push(Command.NewArray, var, arrayIndex);
-                    context.recorder.define(id, var, PrimaryType.Array, type);
+                    context.recorder.define(id, var, PrimaryType.Array, type, context.chunk.getCurrentPostion());
                     context.variablePool.freeIndex(arrayIndex);
                 } else {
-                    context.recorder.define(id, var, type);
+                    context.recorder.define(id, var, type, context.chunk.getCurrentPostion());
                 }
-            } else if (varNode instanceof NNode) {
-                int val = context.variablePool.createIndex();
-                handleVarDeclAssign((NNode) varNode, val, context);
-                context.chunk.push(Command.Mov, var, val);
-                context.variablePool.freeIndex(val);
+            }
+            if (i + 1 < varListNode.getChildren().size()) {
+                varNode = varListNode.getChildren().get(++i);
+                if (varNode instanceof NNode) {
+                    int val = context.variablePool.createIndex();
+                    handleVarDeclAssign((NNode) varNode, val, context);
+                    context.chunk.push(Command.Mov, var, val);
+                    context.variablePool.freeIndex(val);
+                }
             }
         }
 
@@ -154,8 +159,8 @@ class CodeCreator {
         NNode condition = (NNode) root.getChildren().get(1);
         int var = childContext.variablePool.createIndex();
         handleExpr(condition, var, context);
-        childContext.variablePool.freeIndex(var);
         childContext.chunk.push(Command.JmpUnless, endHolder, var);
+        childContext.variablePool.freeIndex(var);
         NNode node = (NNode) root.getChildren().get(2);
 
         handleStmtBlock(node, childContext);
@@ -172,12 +177,24 @@ class CodeCreator {
         context.chunk.push(Command.Jmp, context.jumpStack.getCurrentContinueLocation());
     }
     private void handleReadStmt(NNode root, Context context) {
-        NNode node = (NNode) root.getChildren().get(1);
-        int var = context.variablePool.createIndex();
-        handleExpr(node, var, context);
-        context.chunk.push(Command.Read, var);
-        context.variablePool.freeIndex(var);
+        TNode node = (TNode) root.getChildren().get(1);
+        int id = context.recorder.getVarIndex(node.getValue());
+        if (root.getChildren().size() > 2) {
+            int var = context.variablePool.createIndex();
+            int i = context.variablePool.createIndex();
+            NNode index = (NNode) root.getChildren().get(2);
+            handleExpr(index, i, context);
+            context.chunk.push(Command.Get, var, id, i);
+            context.chunk.push(Command.Read, var);
+            context.chunk.push(Command.Set, id, var, i);
+            context.variablePool.freeIndex(i);
+            context.variablePool.freeIndex(var);
+        } else {
+            context.chunk.push(Command.Read, id);
+        }
+
     }
+
     private void handleWriteStmt(NNode root, Context context) {
         NNode node = (NNode) root.getChildren().get(1);
         int var = context.variablePool.createIndex();
@@ -378,13 +395,16 @@ class CodeCreator {
             if (!context.recorder.contains(node.getValue())) {
                 throw new IntermediateException("undefined '" + node.getValue() + "'");
             }
-            if (root.getChildren().size() == 2) {
+            if (root.getChildren().size() >= 2) {
                 NNode index = (NNode) root.getChildren().get(1);
                 int i = context.variablePool.createIndex();
                 int num = context.recorder.getVarIndex(node.getValue());
                 handleExpr(index, i, context);
                 context.chunk.push(Command.Get, res, num, i);
                 context.variablePool.freeIndex(i);
+            } else {
+                int num = context.recorder.getVarIndex(node.getValue());
+                context.chunk.push(Command.Mov, res, num);
             }
         } else {
             ImmediateNumber number = new ImmediateNumber();

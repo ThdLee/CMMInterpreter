@@ -3,8 +3,9 @@ package com.interpreter.virtualmachine;
 import com.interpreter.intermediatecode.CodeChunk;
 import com.interpreter.intermediatecode.CodeChunk.*;
 import com.interpreter.intermediatecode.PrimaryType;
+import com.interpreter.intermediatecode.TypeLazyBinding;
+import com.interpreter.intermediatecode.VariableRecorder;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -76,7 +77,7 @@ public class Interpreter {
             } catch (NumberFormatException e) {
                 throw new RuntimeException("'" + v + "' is not a " + value.type);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             scanner.close();
             return  line + 1;
         });
@@ -92,7 +93,7 @@ public class Interpreter {
             if (length.type != PrimaryType.Int) {
                 throw new RuntimeException("index should be int");
             }
-            PrimaryType elemType = self.runtime.recorder.getArrayType(code.getNum1());
+            PrimaryType elemType = TypeLazyBinding.getInstance().get(code.getNum1());
             if (elemType == null) {
                 throw new RuntimeException("array has not defined");
             }
@@ -133,7 +134,7 @@ public class Interpreter {
             ImmediateNumber immediateNumber = code.getImmediateNumber();
             Value value = immediateNumber == null ? dataChunk.getData(code.getNum2()) :
                     new Value(immediateNumber);
-            dataChunk.setData(code.getNum1(), value);
+            dataChunk.setData(code.getNum1(), value, line);
             return line + 1;
         });
 
@@ -206,7 +207,7 @@ public class Interpreter {
         M.put(Command.Lt, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
             Value v1 = dataChunk.getData(code.getNum1());
             Value v2 = dataChunk.getData(code.getNum2());
-            Value res = Value.div(v1, v2);
+            Value res = Value.lt(v1, v2);
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '<' "+ v2);
             }
@@ -217,7 +218,7 @@ public class Interpreter {
         M.put(Command.Gte, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
             Value v1 = dataChunk.getData(code.getNum1());
             Value v2 = dataChunk.getData(code.getNum2());
-            Value res = Value.div(v1, v2);
+            Value res = Value.gte(v1, v2);
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '>=' "+ v2);
             }

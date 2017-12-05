@@ -1,7 +1,6 @@
 package com.interpreter.analysis;
 
 import com.interpreter.analysis.node.NNode;
-import com.interpreter.analysis.node.Node;
 import com.interpreter.analysis.node.TNode;
 
 import java.io.IOException;
@@ -433,7 +432,6 @@ public class Parser {
                 cur = nextToken();
 
                 NNode index = new NNode(NonTerminalSymbol.Expr1);
-                root.addNode(index);
                 handleExpr1(index);
 
                 if (cur.type != Token.Type.Sign || !cur.value.equals("]")) {
@@ -479,9 +477,24 @@ public class Parser {
         }
 
         cur = nextToken();
-        NNode expr = new NNode(NonTerminalSymbol.Expr1);
-        handleExpr1(expr);
-        root.addNode(expr);
+        if (cur.type != Token.Type.Identifier) {
+            throw new ParserException(cur, "only identifier can be read");
+        }
+        TNode idNode = new TNode(TerminalSymbol.Identifier, cur.value);
+        root.addNode(idNode);
+        cur = nextToken();
+        if (cur.type == Token.Type.Sign && cur.value.equals("[")) {
+            cur = nextToken();
+
+            NNode index = new NNode(NonTerminalSymbol.Expr1);
+            handleExpr1(index);
+
+            if (cur.type != Token.Type.Sign || !cur.value.equals("]")) {
+                throw new ParserException(cur);
+            }
+            root.addNode(index);
+            cur = nextToken();
+        }
 
         if (cur.type != Token.Type.Sign || !cur.value.equals(")")) {
             throw new ParserException(cur);

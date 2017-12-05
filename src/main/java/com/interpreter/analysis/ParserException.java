@@ -5,8 +5,8 @@ public class ParserException extends RuntimeException {
         super("unexpected '" + c + "'");
     }
 
-    public ParserException(String msg) {
-        super("unexpected \"" + msg + "\"");
+    public ParserException(Token token, String msg) {
+        super("<line:" + token.line + " pos:" + token.pos + "> " + msg);
     }
 
     public ParserException(Token token) {

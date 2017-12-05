@@ -3,6 +3,7 @@ package com.interpreter;
 import com.interpreter.analysis.*;
 import com.interpreter.intermediatecode.CodeChunk;
 import com.interpreter.intermediatecode.IntermediateCodeCreator;
+import com.interpreter.virtualmachine.VirtualMachine;
 
 import java.io.*;
 
@@ -14,12 +15,7 @@ public class Client {
         }
         File file = new File(args[0]);
         Reader reader = new FileReader(file);
-        Lexer lexer = new Lexer(reader);
-        Parser parser = new Parser(lexer);
-        AST ast = parser.prog();
-        IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
-        CodeChunk codeChunk = codeCreator.create(ast).getChunk();
-        System.out.println(codeChunk);
+        VirtualMachine.getInstance().run(reader);
         reader.close();
     }
 }

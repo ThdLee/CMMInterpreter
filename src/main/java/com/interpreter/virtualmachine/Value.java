@@ -65,8 +65,10 @@ public class Value {
             return bolValue;
         } else if (type == PrimaryType.Int) {
             return intValue != 0;
+        } else if (type == PrimaryType.Double) {
+            return douValue != 0.0;
         }
-        throw new RuntimeException();
+        throw new RuntimeException(this + " cannot convert to " + PrimaryType.Bool);
     }
 
     public static Value add(Value v1, Value v2) {

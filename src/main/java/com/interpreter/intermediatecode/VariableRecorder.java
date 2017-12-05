@@ -8,27 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class VariableRecorder {
-    static class VariableInfo {
-        private Integer register;
-        private PrimaryType type;
 
-        public VariableInfo(int register, PrimaryType type) {
-            this.register = register;
-            this.type = type;
-        }
 
-        public Integer getRegister() {
-            return register;
-        }
+    private final Map<String, Integer> variableMap = new LinkedHashMap<>();
 
-        public PrimaryType getType() {
-            return type;
-        }
-
-    }
-
-    private final Map<String, VariableInfo> variableMap = new LinkedHashMap<>();
-    private final Map<Integer, PrimaryType> typeMap = new HashMap<>();
 
     private final VariableRecorder parent;
 
@@ -56,32 +39,28 @@ public class VariableRecorder {
         return variableMap.containsKey(variableName);
     }
 
-    void define(String variableName, int varIndex, PrimaryType type) {
-        define(variableName, varIndex, type, null);
+    void define(String variableName, int varIndex, PrimaryType type, int line) {
+        define(variableName, varIndex, type, null, line);
     }
 
-    void define(String variableName, int varIndex, PrimaryType type, PrimaryType elemType) {
+    void define(String variableName, int varIndex, PrimaryType type, PrimaryType elemType, int line) {
         if (variableMap.containsKey(variableName)) {
             throw new IntermediateException("'" + variableName + "' has defined");
         }
-        VariableInfo newInfo;
-        newInfo = new VariableInfo(varIndex, type);
         if (type == PrimaryType.Array) {
-            typeMap.put(varIndex, elemType);
+            TypeLazyBinding.getInstance().put(varIndex, elemType, line);
+        } else {
+            TypeLazyBinding.getInstance().put(varIndex, type, line);
         }
-        variableMap.put(variableName, newInfo);
+        variableMap.put(variableName, varIndex);
     }
 
     Integer getVarIndex(String variableName) {
-        VariableInfo info = variableMap.get(variableName);
-        Integer varIndex = info == null ? null : info.getRegister();
+        Integer varIndex = variableMap.get(variableName);
         if(varIndex == null && parent != null) {
             varIndex = parent.getVarIndex(variableName);
         }
         return varIndex;
     }
 
-    public PrimaryType getArrayType(int varIndex) {
-        return typeMap.get(varIndex);
-    }
 }
