@@ -3,7 +3,7 @@ package com.interpreter.analysis;
 import java.util.HashSet;
 
 public class Token {
-    public static enum Type {
+    public enum Type {
         Keyword, Decimal, Integer, Identifier, Sign, Annotation, String, Space, NewStatement, EndSymbol;
     }
 

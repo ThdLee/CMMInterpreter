@@ -6,7 +6,6 @@ import com.interpreter.intermediatecode.CodeChunk.*;
 public class IntermediateCodeCreator {
     public Context create(AST tree) {
         Context context = new Context();
-
         CodeCreator.instance.handleRoot(tree.getRoot(), context);
         replacePlaceholder(context);
         return context;

@@ -5,7 +5,6 @@ import com.interpreter.analysis.node.TNode;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Stack;
 
 public class Parser {
     private static final HashSet<String> AssignSignSet = new HashSet<String>() {{
@@ -39,6 +38,8 @@ public class Parser {
     private Lexer lexer;
 
     private Token cur = null;
+    private int line = 0;
+
     public Parser(Lexer lexer) {
         this.lexer = lexer;
     }
@@ -48,6 +49,7 @@ public class Parser {
         while (token.type == Token.Type.Space || token.type == Token.Type.Annotation) {
             token = lexer.read();
         }
+        line = token.line;
         return token;
     }
 
@@ -69,6 +71,7 @@ public class Parser {
 
 
     private void handleStmt(NNode root) throws IOException {
+        root.setLine(line);
         NNode node = new NNode();
         needSemicolon = true;
         if (cur.type == Token.Type.Keyword) {
@@ -134,12 +137,16 @@ public class Parser {
 
     private void handleType(NNode root) throws IOException {
         TNode node = new TNode();
-        if (cur.value.equals("int")) {
-            node.setSymbol(TerminalSymbol.Int);
-        } else if (cur.value.equals("double")) {
-            node.setSymbol(TerminalSymbol.Double);
-        } else if (cur.value.equals("string")) {
-            node.setSymbol(TerminalSymbol.String);
+        switch (cur.value) {
+            case "int":
+                node.setSymbol(TerminalSymbol.Int);
+                break;
+            case "double":
+                node.setSymbol(TerminalSymbol.Double);
+                break;
+            case "string":
+                node.setSymbol(TerminalSymbol.String);
+                break;
         }
         root.addNode(node);
         cur = nextToken();

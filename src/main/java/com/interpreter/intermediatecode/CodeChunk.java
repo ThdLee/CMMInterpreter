@@ -1,10 +1,13 @@
 package com.interpreter.intermediatecode;
 
+import com.interpreter.debug.Debug;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public class CodeChunk implements Iterable<CodeChunk.Code> {
+    private static final int NONE = Integer.MAX_VALUE;
 
     private final List<Code> container = new ArrayList<>();
 
@@ -72,7 +75,12 @@ public class CodeChunk implements Iterable<CodeChunk.Code> {
             StringBuilder str = new StringBuilder();
             str.append(line).append(" ");
             str.append(String.format("%10s", command)).append("   ");
-            str.append(num1).append(", ").append(num2).append(", ").append(num3);
+            str.append(num1).append(", ");
+            if (num2 != NONE) str.append(num2);
+            else str.append("_");
+            str.append(", ");
+            if (num3 != NONE) str.append(num3);
+            else str.append("_");
             if(immediateNumber != null) {
                 if (immediateNumber.type == ImmediateType.String) {
                     str.append("  <<  \"").append(immediateNumber).append("\"");
@@ -138,8 +146,10 @@ public class CodeChunk implements Iterable<CodeChunk.Code> {
         code.num2 = num2;
         code.num3 = num3;
         code.immediateNumber = immediateNumber;
-        code.line = container.size();
+        code.line = getCurrentPostion() + 1;
         container.add(code);
+
+        Debug.instance.mapCode(code.line);
     }
 
     void push(Command command, int num1, int num2, int num3) {
@@ -147,23 +157,15 @@ public class CodeChunk implements Iterable<CodeChunk.Code> {
     }
 
     void push(Command command, int num1, int num2) {
-        push(command, num1, num2, 0, null);
+        push(command, num1, num2, NONE, null);
     }
 
     void push(Command command, int num1) {
-        push(command, num1, 0, 0, null);
-    }
-
-    void push(Command command) {
-        push(command, 0, 0, 0, null);
+        push(command, num1, NONE, NONE, null);
     }
 
     void push(Command command, int num1, ImmediateNumber immediateNumber) {
-        push(command, num1, 0, 0, immediateNumber);
-    }
-
-    void push(Code code) {
-        container.add(code);
+        push(command, num1, NONE, NONE, immediateNumber);
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.interpreter.analysis.TerminalSymbol;
 import com.interpreter.analysis.node.NNode;
 import com.interpreter.analysis.node.Node;
 import com.interpreter.analysis.node.TNode;
+import com.interpreter.debug.Debug;
 import com.interpreter.intermediatecode.CodeChunk.Command;
 import com.interpreter.intermediatecode.CodeChunk.ImmediateNumber;
 
@@ -20,6 +21,7 @@ class CodeCreator {
         }
     }
     private void handleStmt(NNode root, Context context) {
+        Debug.instance.mapRecorder(root.getLine(), context.recorder);
         for (Node node : root.getChildren()) {
             NNode n = (NNode) node;
             switch (n.getSymbol()) {
@@ -75,7 +77,7 @@ class CodeCreator {
             default:
                 throw new IntermediateException("unknown type '" + node.getSymbol() + "'");
         }
-        int arrayIndex = Integer.MAX_VALUE;
+        int arrayIndex = -1;
         if (typeNode.getChildren().size() >= 2) {
             NNode n = (NNode) typeNode.getChildren().get(1);
             arrayIndex = context.variablePool.createIndex();
@@ -92,7 +94,7 @@ class CodeCreator {
                 if (context.recorder.localContains(id)) {
                     throw new IntermediateException("'" + id + "' has defined");
                 }
-                if (arrayIndex != Integer.MAX_VALUE) {
+                if (arrayIndex != -1) {
                     context.chunk.push(Command.NewArray, var, arrayIndex);
                     context.recorder.define(id, var, PrimaryType.Array, type, context.chunk.getCurrentPostion());
                     context.variablePool.freeIndex(arrayIndex);
@@ -100,18 +102,20 @@ class CodeCreator {
                     context.recorder.define(id, var, type, context.chunk.getCurrentPostion());
                 }
             }
-            if (i + 1 < varListNode.getChildren().size()) {
-                varNode = varListNode.getChildren().get(++i);
+            if (i+1 < varListNode.getChildren().size()) {
+                varNode = varListNode.getChildren().get(i+1);
                 if (varNode instanceof NNode) {
                     int val = context.variablePool.createIndex();
                     handleVarDeclAssign((NNode) varNode, val, context);
                     context.chunk.push(Command.Mov, var, val);
                     context.variablePool.freeIndex(val);
+                    i++;
                 }
             }
         }
 
     }
+
     private void handleVarDeclAssign(NNode root, int res, Context context) {
         NNode node = (NNode) root.getChildren().get(1);
         handleExpr(node, res, context);
@@ -208,7 +212,8 @@ class CodeCreator {
         String id = idNode.getValue();
         if (!context.recorder.contains(id)) throw new IntermediateException("undefined '" + id + "'");
 
-        int res = context.variablePool.createIndex();
+        int res;
+
         Node node = root.getChildren().get(i++);
         boolean hasIndex = false;
         int index = 0;
@@ -217,6 +222,9 @@ class CodeCreator {
             index = context.variablePool.createIndex();
             handleExpr((NNode) node, index, context);
             node = root.getChildren().get(i++);
+            res = context.variablePool.createIndex();
+        } else {
+            res = context.recorder.getVarIndex(id);
         }
         TNode sign = (TNode) node;
         NNode expr = (NNode) root.getChildren().get(i);
@@ -280,14 +288,12 @@ class CodeCreator {
             default:
                 throw new IntermediateException("unknown operation '" + sign.getValue() + "'");
         }
-        int var = context.recorder.getVarIndex(id);
+
         if (hasIndex) {
+            int var = context.recorder.getVarIndex(id);
             context.chunk.push(Command.Set, var, res, index);
             context.variablePool.freeIndex(res);
             context.variablePool.freeIndex(index);
-        } else {
-            context.chunk.push(Command.Mov, var, res);
-            context.variablePool.freeIndex(res);
         }
 
     }

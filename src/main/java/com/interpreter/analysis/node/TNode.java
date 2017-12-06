@@ -3,20 +3,21 @@ package com.interpreter.analysis.node;
 import com.interpreter.analysis.TerminalSymbol;
 
 // Terminal Node
-public class TNode implements Node {
+public class TNode extends Node {
 
     private TerminalSymbol symbol = null;
 
     private String value;
 
-    public TNode() {}
+    public TNode() {
+    }
 
     public TNode(TerminalSymbol symbol) {
         this.symbol = symbol;
     }
 
     public TNode(TerminalSymbol symbol, String value) {
-        this.symbol = symbol;
+        this(symbol);
         this.value = value;
     }
 

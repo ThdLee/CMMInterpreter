@@ -21,6 +21,11 @@ public class Array {
     }
 
     public void setElement(int index, Value value) {
+        if (index < 0) {
+            throw new RuntimeException("index cannot be negative");
+        } else if (index >= array.size()) {
+            throw new RuntimeException("index out of bounds");
+        }
         Value oldValue = array.get(index);
         value = Value.convertNumberToHeightTypeLevel(value, oldValue);
         if (value.type != elemType) {

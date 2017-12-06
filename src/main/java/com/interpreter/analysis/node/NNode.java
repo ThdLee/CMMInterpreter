@@ -5,7 +5,7 @@ import com.interpreter.analysis.NonTerminalSymbol;
 import java.util.ArrayList;
 
 // Non-Terminal Node
-public class NNode implements Node {
+public class NNode extends Node {
 
     private ArrayList<Node> children = new ArrayList<>();
 

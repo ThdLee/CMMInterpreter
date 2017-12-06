@@ -37,19 +37,23 @@ public class Lexer {
     private State state;
     private Token endToken = null;
     private final LinkedList<Token> tokenBuffer;
+    private final ArrayList<String> codeArray;
 
     private int pos;
     private int lines = 1;
 
     private StringBuilder buf;
+    private StringBuilder code;
 
     public Lexer(Reader reader) {
         this.reader = reader;
         this.state = State.Normal;
         tokenBuffer = new LinkedList<>();
+        codeArray = new ArrayList<>();
+        code = new StringBuilder();
     }
 
-    public Token read() throws IOException {
+    Token read() throws IOException {
 
         if(endToken != null) {
             return endToken;
@@ -61,6 +65,10 @@ public class Lexer {
             if (c == '\n') {
                 lines++;
                 pos = 0;
+                codeArray.add(code.toString());
+                code = new StringBuilder();
+            } else {
+                code.append(c);
             }
             while(!readChar(c)) {}
         }
@@ -69,6 +77,10 @@ public class Lexer {
             endToken = token;
         }
         return token;
+    }
+
+    ArrayList<String> getCodeArray() {
+        return codeArray;
     }
 
     private boolean isEscape = false;

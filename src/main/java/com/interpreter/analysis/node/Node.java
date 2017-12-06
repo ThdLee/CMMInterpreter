@@ -6,7 +6,16 @@ import com.interpreter.analysis.Token;
 
 import java.util.ArrayList;
 
-public interface Node {
+public abstract class Node {
 
+    private int line;
+
+    public int getLine() {
+        return line;
+    }
+
+    public void setLine(int line) {
+        this.line = line;
+    }
 
 }
