@@ -1,14 +1,15 @@
 package com.interpreter.intermediatecode;
 
 import com.interpreter.analysis.AST;
+import com.interpreter.debug.Debug;
 import com.interpreter.intermediatecode.CodeChunk.*;
 
 public class IntermediateCodeCreator {
-    public Context create(AST tree) {
+    public CodeChunk create(AST tree) {
         Context context = new Context();
         CodeCreator.instance.handleRoot(tree.getRoot(), context);
         replacePlaceholder(context);
-        return context;
+        return context.chunk;
     }
 
     private void replacePlaceholder(Context context) {

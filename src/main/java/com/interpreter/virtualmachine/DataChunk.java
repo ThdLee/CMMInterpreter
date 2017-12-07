@@ -32,6 +32,10 @@ public class DataChunk {
         return dataArray.get(position);
     }
 
+    public int getSize() {
+        return dataArray.size();
+    }
+
     private void handlePosition(int position) {
         if (position >= dataArray.size()) {
             int needCount = position - dataArray.size() + 1;

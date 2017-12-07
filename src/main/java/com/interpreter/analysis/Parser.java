@@ -2,6 +2,7 @@ package com.interpreter.analysis;
 
 import com.interpreter.analysis.node.NNode;
 import com.interpreter.analysis.node.TNode;
+import com.interpreter.debug.Debug;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -66,6 +67,7 @@ public class Parser {
             root.addNode(stmt);
             handleStmt(stmt);
         }
+
         return tree;
     }
 

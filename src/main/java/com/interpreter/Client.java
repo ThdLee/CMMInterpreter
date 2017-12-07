@@ -7,6 +7,7 @@ import com.interpreter.intermediatecode.IntermediateCodeCreator;
 import com.interpreter.virtualmachine.VirtualMachine;
 
 import java.io.*;
+import java.util.Scanner;
 
 public class Client {
     public static void main(String[] args) throws IOException {
@@ -15,11 +16,12 @@ public class Client {
             System.exit(1);
         }
 
-        Debug.instance.activation();
+        Debug.activation();
 
         File file = new File(args[0]);
         Reader reader = new FileReader(file);
         VirtualMachine.getInstance().run(reader);
         reader.close();
+
     }
 }

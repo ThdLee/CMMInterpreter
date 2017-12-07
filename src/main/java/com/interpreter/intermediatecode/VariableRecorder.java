@@ -55,7 +55,7 @@ public class VariableRecorder {
         variableMap.put(variableName, varIndex);
     }
 
-    Integer getVarIndex(String variableName) {
+    public Integer getVarIndex(String variableName) {
         Integer varIndex = variableMap.get(variableName);
         if(varIndex == null && parent != null) {
             varIndex = parent.getVarIndex(variableName);

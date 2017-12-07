@@ -3,9 +3,7 @@ package com.interpreter.virtualmachine;
 import com.interpreter.analysis.Lexer;
 import com.interpreter.analysis.Parser;
 import com.interpreter.intermediatecode.CodeChunk;
-import com.interpreter.intermediatecode.Context;
 import com.interpreter.intermediatecode.IntermediateCodeCreator;
-import com.interpreter.intermediatecode.VariableRecorder;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -21,18 +19,11 @@ public class VirtualMachine {
     private VirtualMachine() {}
 
     public void run(Reader reader) throws IOException {
-        Lexer lexer = new Lexer(reader);
-        Parser parser = new Parser(lexer);
+        Parser parser = new Parser(new Lexer(reader));
         IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
-        Context context = codeCreator.create(parser.prog());
-        CodeChunk codeChunk = context.getChunk();
-        Runtime runtime = new Runtime(System.in, System.out, context);
-        try {
-            runtime.run(codeChunk);
-        } catch (Exception e) {
-            System.out.println(runtime.code);
-            throw e;
-        }
+        CodeChunk codeChunk = codeCreator.create(parser.prog());
+        Runtime runtime = new Runtime(System.in, System.out);
+        runtime.run(codeChunk);
 
     }
 }

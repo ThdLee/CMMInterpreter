@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.interpreter.analysis.Token.Type;
+import com.interpreter.debug.Debug;
 
 public class Lexer {
 
@@ -51,6 +52,7 @@ public class Lexer {
         tokenBuffer = new LinkedList<>();
         codeArray = new ArrayList<>();
         code = new StringBuilder();
+        Debug.instance.setOriginCodes(codeArray);
     }
 
     Token read() throws IOException {
@@ -79,8 +81,13 @@ public class Lexer {
         return token;
     }
 
-    ArrayList<String> getCodeArray() {
-        return codeArray;
+    String[] getCodes() {
+        String[] codes = new String[codeArray.size()];
+        for (int i = 0; i < codeArray.size(); i++) {
+            codes[i] = codeArray.get(i);
+        }
+        return codes;
+
     }
 
     private boolean isEscape = false;

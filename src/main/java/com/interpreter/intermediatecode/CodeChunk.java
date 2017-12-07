@@ -24,6 +24,7 @@ public class CodeChunk implements Iterable<CodeChunk.Code> {
         return container.size();
     }
 
+
     public int getSize() {
         return container.size();
     }
@@ -40,7 +41,6 @@ public class CodeChunk implements Iterable<CodeChunk.Code> {
     }
 
     public static class Code {
-        int line;
 
         Command command;
         int num1;
@@ -73,7 +73,6 @@ public class CodeChunk implements Iterable<CodeChunk.Code> {
         @Override
         public String toString() {
             StringBuilder str = new StringBuilder();
-            str.append(line).append(" ");
             str.append(String.format("%10s", command)).append("   ");
             str.append(num1).append(", ");
             if (num2 != NONE) str.append(num2);
@@ -146,10 +145,9 @@ public class CodeChunk implements Iterable<CodeChunk.Code> {
         code.num2 = num2;
         code.num3 = num3;
         code.immediateNumber = immediateNumber;
-        code.line = getCurrentPostion() + 1;
         container.add(code);
 
-        Debug.instance.mapCode(code.line);
+        Debug.instance.mapCode(container.size());
     }
 
     void push(Command command, int num1, int num2, int num3) {
