@@ -3,7 +3,6 @@ package com.interpreter.virtualmachine;
 import com.interpreter.intermediatecode.CodeChunk;
 import com.interpreter.intermediatecode.CodeChunk.*;
 import com.interpreter.intermediatecode.PrimaryType;
-import com.interpreter.intermediatecode.TypeLazyBinding;
 import com.interpreter.intermediatecode.VariableRecorder;
 
 import java.util.EnumMap;
@@ -77,7 +76,7 @@ public class Interpreter {
             } catch (NumberFormatException e) {
                 throw new RuntimeException("'" + v + "' is not a " + value.type);
             }
-            dataChunk.setData(code.getNum1(), res, line);
+            dataChunk.setData(code.getNum1(), res);
             scanner.close();
             return  line + 1;
         });
@@ -93,7 +92,7 @@ public class Interpreter {
             if (length.type != PrimaryType.Int) {
                 throw new RuntimeException("index should be int");
             }
-            PrimaryType elemType = TypeLazyBinding.getInstance().get(code.getNum1());
+            PrimaryType elemType = VariableRecorder.getType(code.getNum1());
             if (elemType == null) {
                 throw new RuntimeException("array has not defined");
             }
@@ -134,7 +133,7 @@ public class Interpreter {
             ImmediateNumber immediateNumber = code.getImmediateNumber();
             Value value = immediateNumber == null ? dataChunk.getData(code.getNum2()) :
                     new Value(immediateNumber);
-            dataChunk.setData(code.getNum1(), value, line);
+            dataChunk.setData(code.getNum1(), value);
             return line + 1;
         });
 

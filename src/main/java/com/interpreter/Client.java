@@ -16,7 +16,7 @@ public class Client {
             System.exit(1);
         }
 
-        Debug.activation();
+        //Debug.activation();
 
         File file = new File(args[0]);
         Reader reader = new FileReader(file);

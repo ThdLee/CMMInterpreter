@@ -11,7 +11,7 @@ public class VariableRecorder {
 
 
     private final Map<String, Integer> variableMap = new LinkedHashMap<>();
-
+    private static final Map<Integer, PrimaryType> typeMap = new HashMap<>();
 
     private final VariableRecorder parent;
 
@@ -48,9 +48,9 @@ public class VariableRecorder {
             throw new IntermediateException("'" + variableName + "' has defined");
         }
         if (type == PrimaryType.Array) {
-            TypeLazyBinding.getInstance().put(varIndex, elemType, line);
+            typeMap.put(varIndex, elemType);
         } else {
-            TypeLazyBinding.getInstance().put(varIndex, type, line);
+            typeMap.put(varIndex, type);
         }
         variableMap.put(variableName, varIndex);
     }
@@ -61,6 +61,10 @@ public class VariableRecorder {
             varIndex = parent.getVarIndex(variableName);
         }
         return varIndex;
+    }
+
+    public static PrimaryType getType(int varIndex) {
+        return typeMap.get(varIndex);
     }
 
 }
