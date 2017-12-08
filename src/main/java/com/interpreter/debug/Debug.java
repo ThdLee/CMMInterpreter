@@ -13,32 +13,18 @@ import java.util.*;
 
 public class Debug {
 
-    private static final HashSet<String> commandSet = new HashSet<String>() {{
-        add("l"); add("list");
-        add("r"); add("run");
-        add("c"); add("continue");
-        add("b"); add("break");
-        add("n"); add("next");
-        add("p"); add("print");
-        add("q"); add("quit");
-        add("info");
-    }};
-
-
     public static Debug instance = new Debug();
 
     private Debug() {}
 
-    final HashMap<Integer, VariableRecorder> recorderMap = new HashMap<>();
-    final LinkedHashMap<Integer, Integer> codeMap = new LinkedHashMap<>();
-    final LinkedHashSet<Integer> breakSet = new LinkedHashSet<>();
-    final LinkedHashSet<Integer> breakInterSet = new LinkedHashSet<>();
+    private final HashMap<Integer, VariableRecorder> recorderMap = new HashMap<>();
+    private final HashMap<Integer, Integer> originToInterMap = new HashMap<>();
+    private final HashMap<Integer, Integer> interToOriginMap = new HashMap<>();
+    private final LinkedHashSet<Integer> breakSet = new LinkedHashSet<>();
+    private final LinkedHashSet<Integer> breakInterSet = new LinkedHashSet<>();
 
     private static boolean activate = false;
     private int maxLine = 0;
-
-    private boolean interCodeMode = false;
-    private Scanner scanner;
 
     private InputStream in;
     private PrintStream out;
@@ -68,7 +54,11 @@ public class Debug {
         if (recorderMap.isEmpty()) {
             throw new RuntimeException("");
         }
-        codeMap.putIfAbsent(maxLine, line);
+        if (!originToInterMap.containsKey(maxLine)) {
+            originToInterMap.put(maxLine, line);
+            interToOriginMap.put(line, maxLine);
+        }
+
     }
 
     public void setOriginCodes(ArrayList<String> originCodes) {
@@ -78,7 +68,7 @@ public class Debug {
 
     private int line;
     public void intoDebugMode(Interpreter interpreter, CodeChunk codeChunk, DataChunk dataChunk, InputStream in, PrintStream out) {
-        this.scanner = new Scanner(in);
+        Scanner scanner = new Scanner(in);
         this.in = in;
         this.out = out;
         this.codeChunk = codeChunk;
@@ -117,6 +107,9 @@ public class Debug {
                 case "print":
                     parsePrint(commands);
                     break;
+                case "d":
+                case "delete":
+                    parseDelete(commands);
                 case "q":
                 case "quit":
                     System.exit(0);
@@ -132,7 +125,7 @@ public class Debug {
 
     private void run(int line) {
         CodeChunk.Code code = codeChunk.getCodeByLine(line);
-        line = interpreter.run(line, code, dataChunk);
+        this.line = interpreter.run(line, code, dataChunk);
     }
 
     private void parseList(String[] commands) {
@@ -158,7 +151,17 @@ public class Debug {
         switch (commands.length) {
             case 1:
                 if (line >= codeChunk.getSize()) line = 0;
-                run(line);
+                while (true) {
+                    if (line >= codeChunk.getSize()) break;
+                    if (breakSet.contains(line)) {
+                        out.println("breakpoint at " + originCodes.get(covertToOriginCodeLine(line)));
+                        return;
+                    } else if (breakInterSet.contains(line)) {
+                        out.println("breakpoint at " + codeChunk.getCodeByLine(line));
+                        return;
+                    }
+                    run(line);
+                }
                 return;
             default:
                 out.println("run: r/run");
@@ -168,7 +171,17 @@ public class Debug {
     private void parseContinue(String[] commands) {
         switch (commands.length) {
             case 1:
-                run(line);
+                while (true) {
+                    if (line >= codeChunk.getSize()) break;
+                    if (breakSet.contains(line)) {
+                        out.println("breakpoint at " + originCodes.get(covertToOriginCodeLine(line)));
+                        return;
+                    } else if (breakInterSet.contains(line)) {
+                        out.println("breakpoint at " + codeChunk.getCodeByLine(line));
+                        return;
+                    }
+                    run(line);
+                }
                 return;
             default:
                 out.println("continue: c/continue");
@@ -186,7 +199,8 @@ public class Debug {
                     return;
                 }
                 if (line > 0 && line <= originCodes.size()) {
-                    breakSet.add(line);
+                    breakSet.add(convertToInterCodeLine(line-1));
+                    out.println("breakpoint at line " + line);
                 } else {
                     out.println("'" + line + "' is out of bounds");
                 }
@@ -200,7 +214,8 @@ public class Debug {
                         return;
                     }
                     if (line > 0 && line <= codeChunk.getSize()) {
-                        breakInterSet.add(line);
+                        breakInterSet.add(line-1);
+                        out.println("breakpoint at intermediate code line " + line);
                     } else {
                         out.println("'" + line + "' is out of bounds");
                     }
@@ -214,10 +229,21 @@ public class Debug {
     private void parseNext(String[] commands) {
         switch (commands.length) {
             case 1:
+                int originLine = covertToOriginCodeLine(line);
+                while (originLine == covertToOriginCodeLine(line)) {
+                    if (line >= codeChunk.getSize()) return;
+                    run(line);
+                }
+                return;
+            case 2:
+                if (!commands[1].equals("inter")) {
+                    out.println("next: n/next [inter]");
+                }
+                if (line >= codeChunk.getSize()) return;
                 run(line);
                 return;
             default:
-                out.println("next: n/next");
+                out.println("next: n/next [inter]");
         }
     }
 
@@ -228,7 +254,7 @@ public class Debug {
                 try {
                     re = Integer.parseInt(commands[1]);
                 } catch (NumberFormatException e) {
-                    re = recorderMap.get(line).getVarIndex(commands[1]);
+                    re = recorderMap.get(covertToOriginCodeLine(line)).getVarIndex(commands[1]);
                 }
                 if (re == null || re < 0 || re >= dataChunk.getSize() || dataChunk.getData(re) == null) {
                     out.println("invalid identifier or register '" + commands[1] + "'");
@@ -242,12 +268,60 @@ public class Debug {
         }
     }
 
+    private void parseDelete(String[] commands) {
+        int line = 0;
+        switch (commands.length) {
+            case 2:
+                try {
+                    line = Integer.parseInt(commands[1]);
+                } catch (NumberFormatException e) {
+                    out.println("'" + commands[1] + "' is not an integer");
+                    return;
+                }
+                line -= 1;
+                if (line >= 0 && line < originCodes.size()) {
+                    if (breakSet.contains(line)) {
+                        breakSet.remove(line);
+                        out.println("breakpoint at line:" + line + " has been deleted");
+                    } else {
+                        out.println("no breakpoint at line:" + line);
+                    }
+                } else {
+                    out.println("'" + line + "' is out of bounds");
+                }
+                return;
+            case 3:
+                if (commands[1].equals("inter")) {
+                    try {
+                        line = Integer.parseInt(commands[3]);
+                    } catch (NumberFormatException e) {
+                        out.println("'" + commands[1] + "' is not an integer");
+                        return;
+                    }
+                    line -= 1;
+                    if (line >= 0 && line < codeChunk.getSize()) {
+                        if (breakInterSet.contains(line)) {
+                            breakInterSet.remove(line);
+                            out.println("breakpoint at intermediate code line:" + line + " has been deleted");
+                        } else {
+                            out.println("no breakpoint at line:" + line);
+                        }
+                    } else {
+                        out.println("'" + line + "' is out of bounds");
+                    }
+                    return;
+                }
+            default:
+                out.println("delete: d/delete [inter] <line>");
+        }
+    }
+
     private void parseInfo(String[] commands) {
         switch (commands.length) {
             case 2:
                 if (commands[1].equals("break")) {
                     for (int b : breakSet) {
-                        out.println("breakpoint at line " + b);
+                        out.println("breakpoint at line " + (covertToOriginCodeLine(b)+1));
                     }
                 } else {
                     out.println("info [inter] break");
@@ -256,7 +330,7 @@ public class Debug {
             case 3 :
                 if (commands[1].equals("inter") && commands[2].equals("break")) {
                     for (int b : breakInterSet) {
-                        out.println("breakpoint at intermediate code line " + b);
+                        out.println("breakpoint at intermediate code line " + (b+1));
                     }
                 } else {
                     out.println("info [inter] break");
@@ -265,6 +339,20 @@ public class Debug {
             default:
                 out.println("info [inter] break");
         }
+    }
+
+    private int covertToOriginCodeLine(int line) {
+        while (line >= 0 && line < codeChunk.getSize() && !interToOriginMap.containsKey(line)) {
+            line -= 1;
+        }
+        return interToOriginMap.getOrDefault(line, 0);
+    }
+
+    private int convertToInterCodeLine(int line) {
+        while (line >= 0 && line < originCodes.size() && !originToInterMap.containsKey(line)) {
+            line += 1;
+        }
+        return originToInterMap.getOrDefault(line, Integer.MAX_VALUE);
     }
 
 }

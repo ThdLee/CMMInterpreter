@@ -100,6 +100,7 @@ class CodeCreator {
                     context.variablePool.freeIndex(arrayIndex);
                 } else {
                     context.recorder.define(id, var, type, context.chunk.getCurrentPostion());
+                    context.chunk.push(Command.Mov, var, initialize(type));
                 }
             }
             if (i+1 < varListNode.getChildren().size()) {
@@ -435,6 +436,25 @@ class CodeCreator {
             context.chunk.push(Command.Mov, res, number);
         }
 
+    }
+
+    private ImmediateNumber initialize(PrimaryType type) {
+        ImmediateNumber number = new ImmediateNumber();
+        switch (type) {
+            case Int:
+                number.type = CodeChunk.ImmediateType.Integer;
+                break;
+            case Double:
+                number.type = CodeChunk.ImmediateType.Double;
+                break;
+            case Bool:
+                number.type = CodeChunk.ImmediateType.Bool;
+                break;
+            case String:
+                number.type = CodeChunk.ImmediateType.String;
+                break;
+        }
+        return number;
     }
 
 }

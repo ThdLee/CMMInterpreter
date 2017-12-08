@@ -41,7 +41,7 @@ public class Lexer {
     private final ArrayList<String> codeArray;
 
     private int pos;
-    private int lines = 1;
+    private int lines = 0;
 
     private StringBuilder buf;
     private StringBuilder code;

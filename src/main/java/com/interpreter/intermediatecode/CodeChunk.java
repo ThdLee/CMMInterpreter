@@ -147,7 +147,7 @@ public class CodeChunk implements Iterable<CodeChunk.Code> {
         code.immediateNumber = immediateNumber;
         container.add(code);
 
-        Debug.instance.mapCode(container.size());
+        Debug.instance.mapCode(container.size()-1);
     }
 
     void push(Command command, int num1, int num2, int num3) {
