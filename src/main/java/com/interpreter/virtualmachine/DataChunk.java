@@ -13,6 +13,7 @@ public class DataChunk {
     }
 
     public Value getData(int position) {
+        if (position >= dataArray.size()) return null;
         return dataArray.get(position);
     }
 

@@ -38,6 +38,9 @@ public class Token {
     }
 
     Token(Type type, String value, int pos, int line) {
+        if (type == Type.String) {
+            value = value.substring(1, value.length()-1);
+        }
         this.value = value;
         if (KeywordsSet.contains(value)) {
             type = Type.Keyword;

@@ -28,13 +28,14 @@ public class Runtime {
         }
 
         int nextRunLine = 0;
-        try {
+//        try {
             while (nextRunLine < runCodeChunk.getSize()) {
                 CodeChunk.Code code = runCodeChunk.getCodeByLine(nextRunLine);
                 nextRunLine = interpreter.run(nextRunLine, code, dataChunk);
             }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
+//        } catch (Exception e) {
+//            System.out.println(e.getMessage());
+//            System.exit(1);
+//        }
     }
 }

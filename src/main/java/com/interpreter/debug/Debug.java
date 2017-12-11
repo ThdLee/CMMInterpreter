@@ -110,6 +110,7 @@ public class Debug {
                 case "d":
                 case "delete":
                     parseDelete(commands);
+                    break;
                 case "q":
                 case "quit":
                     System.exit(0);
@@ -124,8 +125,13 @@ public class Debug {
     }
 
     private void run(int line) {
-        CodeChunk.Code code = codeChunk.getCodeByLine(line);
-        this.line = interpreter.run(line, code, dataChunk);
+        try {
+            CodeChunk.Code code = codeChunk.getCodeByLine(line);
+            this.line = interpreter.run(line, code, dataChunk);
+        } catch (Exception e) {
+            out.println(e.getMessage() + " at intermediate code line " + line);
+            this.line = Integer.MAX_VALUE;
+        }
     }
 
     private void parseList(String[] commands) {
@@ -147,16 +153,22 @@ public class Debug {
         }
     }
 
+    private int breakLine = -1;
     private void parseRun(String[] commands) {
         switch (commands.length) {
             case 1:
-                if (line >= codeChunk.getSize()) line = 0;
+                if (line >= codeChunk.getSize()) {
+                    line = 0;
+                    breakLine = -1;
+                }
                 while (true) {
                     if (line >= codeChunk.getSize()) break;
-                    if (breakSet.contains(line)) {
+                    if (breakLine != line && breakSet.contains(line)) {
+                        breakLine = line;
                         out.println("breakpoint at " + originCodes.get(covertToOriginCodeLine(line)));
                         return;
-                    } else if (breakInterSet.contains(line)) {
+                    } else if (breakLine != line && breakInterSet.contains(line)) {
+                        breakLine = line;
                         out.println("breakpoint at " + codeChunk.getCodeByLine(line));
                         return;
                     }
@@ -173,10 +185,12 @@ public class Debug {
             case 1:
                 while (true) {
                     if (line >= codeChunk.getSize()) break;
-                    if (breakSet.contains(line)) {
+                    if (breakLine != line && breakSet.contains(line)) {
+                        breakLine = line;
                         out.println("breakpoint at " + originCodes.get(covertToOriginCodeLine(line)));
                         return;
-                    } else if (breakInterSet.contains(line)) {
+                    } else if (breakLine != line && breakInterSet.contains(line)) {
+                        breakLine = line;
                         out.println("breakpoint at " + codeChunk.getCodeByLine(line));
                         return;
                     }
@@ -208,9 +222,9 @@ public class Debug {
             case 3:
                 if (commands[1].equals("inter")) {
                     try {
-                        line = Integer.parseInt(commands[3]);
+                        line = Integer.parseInt(commands[2]);
                     } catch (NumberFormatException e) {
-                        out.println("'" + commands[1] + "' is not an integer");
+                        out.println("'" + commands[2] + "' is not an integer");
                         return;
                     }
                     if (line > 0 && line <= codeChunk.getSize()) {
@@ -234,6 +248,7 @@ public class Debug {
                     if (line >= codeChunk.getSize()) return;
                     run(line);
                 }
+                out.println("line " + (originLine+1) + ": " + originCodes.get(originLine));
                 return;
             case 2:
                 if (!commands[1].equals("inter")) {
@@ -241,6 +256,7 @@ public class Debug {
                 }
                 if (line >= codeChunk.getSize()) return;
                 run(line);
+                out.println("line " + (line+1) + ": " + codeChunk.getCodeByLine(line));
                 return;
             default:
                 out.println("next: n/next [inter]");
@@ -278,10 +294,10 @@ public class Debug {
                     out.println("'" + commands[1] + "' is not an integer");
                     return;
                 }
-                line -= 1;
                 if (line >= 0 && line < originCodes.size()) {
-                    if (breakSet.contains(line)) {
-                        breakSet.remove(line);
+                    int interLine = convertToInterCodeLine(line-1);
+                    if (breakSet.contains(interLine)) {
+                        breakSet.remove(interLine);
                         out.println("breakpoint at line:" + line + " has been deleted");
                     } else {
                         out.println("no breakpoint at line:" + line);
@@ -293,15 +309,14 @@ public class Debug {
             case 3:
                 if (commands[1].equals("inter")) {
                     try {
-                        line = Integer.parseInt(commands[3]);
+                        line = Integer.parseInt(commands[2]);
                     } catch (NumberFormatException e) {
-                        out.println("'" + commands[1] + "' is not an integer");
+                        out.println("'" + commands[2] + "' is not an integer");
                         return;
                     }
-                    line -= 1;
                     if (line >= 0 && line < codeChunk.getSize()) {
-                        if (breakInterSet.contains(line)) {
-                            breakInterSet.remove(line);
+                        if (breakInterSet.contains(line-1)) {
+                            breakInterSet.remove(line-1);
                             out.println("breakpoint at intermediate code line:" + line + " has been deleted");
                         } else {
                             out.println("no breakpoint at line:" + line);

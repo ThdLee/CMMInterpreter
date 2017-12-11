@@ -2,7 +2,7 @@ package com.interpreter.intermediatecode;
 
 import java.util.LinkedList;
 
-public class LocalVariablePool {
+public class VariablePool {
 
     private int nextIndex = 0;
     private LinkedList<Integer> indexPool = new LinkedList<>();

@@ -12,6 +12,7 @@ public class VariableRecorder {
 
     private final Map<String, Integer> variableMap = new LinkedHashMap<>();
     private static final Map<Integer, PrimaryType> typeMap = new HashMap<>();
+    private static final Map<Integer, PrimaryType> arrayTypeMap = new HashMap<>();
 
     private final VariableRecorder parent;
 
@@ -39,19 +40,18 @@ public class VariableRecorder {
         return variableMap.containsKey(variableName);
     }
 
-    void define(String variableName, int varIndex, PrimaryType type, int line) {
-        define(variableName, varIndex, type, null, line);
+    void define(String variableName, int varIndex, PrimaryType type) {
+        define(variableName, varIndex, type, null);
     }
 
-    void define(String variableName, int varIndex, PrimaryType type, PrimaryType elemType, int line) {
+    void define(String variableName, int varIndex, PrimaryType type, PrimaryType elemType) {
         if (variableMap.containsKey(variableName)) {
             throw new IntermediateException("'" + variableName + "' has defined");
         }
-        if (type == PrimaryType.Array) {
-            typeMap.put(varIndex, elemType);
-        } else {
-            typeMap.put(varIndex, type);
+        if (type == PrimaryType.Array && elemType != null) {
+            arrayTypeMap.put(varIndex, elemType);
         }
+        typeMap.put(varIndex, type);
         variableMap.put(variableName, varIndex);
     }
 
@@ -66,5 +66,7 @@ public class VariableRecorder {
     public static PrimaryType getType(int varIndex) {
         return typeMap.get(varIndex);
     }
-
+    public static PrimaryType getElementType(int varIndex) {
+        return arrayTypeMap.get(varIndex);
+    }
 }

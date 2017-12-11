@@ -3,7 +3,7 @@ package com.interpreter.intermediatecode;
 public class Context implements Cloneable {
     CodeChunk chunk;
     VariableRecorder recorder;
-    LocalVariablePool variablePool;
+    VariablePool variablePool;
     PositionPlaceholder positionPlaceholder;
     JumpStack jumpStack;
 
@@ -12,7 +12,7 @@ public class Context implements Cloneable {
         jumpStack = new JumpStack();
         chunk = new CodeChunk();
         recorder = new VariableRecorder();
-        variablePool = new LocalVariablePool();
+        variablePool = new VariablePool();
         positionPlaceholder = new PositionPlaceholder();
     }
 

@@ -92,7 +92,7 @@ public class Interpreter {
             if (length.type != PrimaryType.Int) {
                 throw new RuntimeException("index should be int");
             }
-            PrimaryType elemType = VariableRecorder.getType(code.getNum1());
+            PrimaryType elemType = VariableRecorder.getElementType(code.getNum1());
             if (elemType == null) {
                 throw new RuntimeException("array has not defined");
             }
@@ -133,6 +133,10 @@ public class Interpreter {
             ImmediateNumber immediateNumber = code.getImmediateNumber();
             Value value = immediateNumber == null ? dataChunk.getData(code.getNum2()) :
                     new Value(immediateNumber);
+            Value res = dataChunk.getData(code.getNum1());
+            if (res != null && res.type == PrimaryType.Array) {
+                throw new RuntimeException("array cannot be assigned");
+            }
             dataChunk.setData(code.getNum1(), value);
             return line + 1;
         });

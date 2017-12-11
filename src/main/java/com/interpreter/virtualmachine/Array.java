@@ -17,6 +17,11 @@ public class Array {
     }
 
     public Value getElement(int index) {
+        if (index < 0) {
+            throw new RuntimeException("index cannot be negative");
+        } else if (index >= array.size()) {
+            throw new RuntimeException("index out of bounds, index:" + index + " size:" + array.size());
+        }
         return array.get(index);
     }
 
@@ -24,7 +29,7 @@ public class Array {
         if (index < 0) {
             throw new RuntimeException("index cannot be negative");
         } else if (index >= array.size()) {
-            throw new RuntimeException("index out of bounds");
+            throw new RuntimeException("index out of bounds, index:" + index + " size:" + array.size());
         }
         Value oldValue = array.get(index);
         value = Value.convertNumberToHeightTypeLevel(value, oldValue);
@@ -32,6 +37,17 @@ public class Array {
             throw new RuntimeException(value + " cannot be converted to " + elemType);
         }
         array.set(index, value);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder();
+        str.append('[');
+        for (Value v : array) {
+            str.append("'").append(v).append("',");
+        }
+        str.deleteCharAt(str.length()-1).append(']');
+        return str.toString();
     }
 
 }

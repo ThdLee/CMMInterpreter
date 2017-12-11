@@ -87,6 +87,7 @@ class CodeCreator {
 
         for (int i = 0; i < varListNode.getChildren().size(); i++) {
             int var = -1;
+            boolean newArray = false;
             Node varNode = varListNode.getChildren().get(i);
             if (varNode instanceof TNode && ((TNode) varNode).getSymbol() == TerminalSymbol.Identifier) {
                 var = context.variablePool.createIndex();
@@ -96,13 +97,15 @@ class CodeCreator {
                 }
                 if (arrayIndex != -1) {
                     context.chunk.push(Command.NewArray, var, arrayIndex);
-                    context.recorder.define(id, var, PrimaryType.Array, type, context.chunk.getCurrentPostion());
+                    context.recorder.define(id, var, PrimaryType.Array, type);
                     context.variablePool.freeIndex(arrayIndex);
+                    newArray = true;
                 } else {
-                    context.recorder.define(id, var, type, context.chunk.getCurrentPostion());
+                    context.recorder.define(id, var, type);
                     context.chunk.push(Command.Mov, var, initialize(type));
                 }
             }
+            boolean assign = false;
             if (i+1 < varListNode.getChildren().size()) {
                 varNode = varListNode.getChildren().get(i+1);
                 if (varNode instanceof NNode) {
@@ -111,6 +114,7 @@ class CodeCreator {
                     context.chunk.push(Command.Mov, var, val);
                     context.variablePool.freeIndex(val);
                     i++;
+                    assign = true;
                 }
             }
         }

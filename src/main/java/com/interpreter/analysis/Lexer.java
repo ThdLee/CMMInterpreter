@@ -70,6 +70,7 @@ public class Lexer {
                 codeArray.add(code.toString());
                 code = new StringBuilder();
             } else {
+                if (c == '\0') codeArray.add(code.toString());
                 code.append(c);
             }
             while(!readChar(c)) {}

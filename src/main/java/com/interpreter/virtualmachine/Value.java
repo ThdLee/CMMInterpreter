@@ -72,9 +72,6 @@ public class Value {
     }
 
     public static Value add(Value v1, Value v2) {
-        if (v1.type == PrimaryType.String) {
-            return new Value(v1.strValue + v2.toString());
-        }
         v1 = convertNumberToHeightTypeLevel(v1, v2);
         v2 = convertNumberToHeightTypeLevel(v2, v1);
 
@@ -83,6 +80,8 @@ public class Value {
                 return new Value(v1.intValue + v2.intValue);
             else if (v1.type == PrimaryType.Double)
                 return new Value(v1.douValue + v2.douValue);
+            else if (v1.type == PrimaryType.String)
+                return new Value(v1.strValue + v2.strValue);
         }
         return null;
     }

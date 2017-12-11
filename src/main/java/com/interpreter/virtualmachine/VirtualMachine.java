@@ -21,7 +21,9 @@ public class VirtualMachine {
     public void run(Reader reader) throws IOException {
         Parser parser = new Parser(new Lexer(reader));
         IntermediateCodeCreator codeCreator = new IntermediateCodeCreator();
+
         CodeChunk codeChunk = codeCreator.create(parser.prog());
+
         Runtime runtime = new Runtime(System.in, System.out);
         runtime.run(codeChunk);
 
