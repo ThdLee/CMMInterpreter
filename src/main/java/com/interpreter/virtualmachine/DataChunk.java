@@ -1,14 +1,25 @@
 package com.interpreter.virtualmachine;
 
+import com.interpreter.intermediatecode.PrimaryType;
+import com.interpreter.intermediatecode.TypeLazyBinding;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class DataChunk {
     private final List<Value> dataArray = new ArrayList<>();
 
-    public void setData(int position, Value value) {
-        handlePosition(position);
 
+    public void setData(int position, Value value, int line) {
+        handlePosition(position);
+        PrimaryType type = null;
+        if (TypeLazyBinding.getInstance().isBinding(position, line)) {
+            type = TypeLazyBinding.getInstance().get(position);
+        }
+        if (type != null) {
+            Value temp = new Value(type);
+            value = Value.convertNumberToHeightTypeLevel(value, temp);
+        }
         dataArray.set(position, value);
     }
 

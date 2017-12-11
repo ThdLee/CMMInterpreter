@@ -97,12 +97,11 @@ class CodeCreator {
                 }
                 if (arrayIndex != -1) {
                     context.chunk.push(Command.NewArray, var, arrayIndex);
-                    context.recorder.define(id, var, PrimaryType.Array, type);
+                    context.recorder.define(id, var, PrimaryType.Array, type, context.chunk.getCurrentPostion());
                     context.variablePool.freeIndex(arrayIndex);
                     newArray = true;
                 } else {
-                    context.recorder.define(id, var, type);
-                    context.chunk.push(Command.Mov, var, initialize(type));
+                    context.recorder.define(id, var, type, context.chunk.getCurrentPostion());
                 }
             }
             boolean assign = false;

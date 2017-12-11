@@ -11,8 +11,6 @@ public class VariableRecorder {
 
 
     private final Map<String, Integer> variableMap = new LinkedHashMap<>();
-    private static final Map<Integer, PrimaryType> typeMap = new HashMap<>();
-    private static final Map<Integer, PrimaryType> arrayTypeMap = new HashMap<>();
 
     private final VariableRecorder parent;
 
@@ -40,18 +38,19 @@ public class VariableRecorder {
         return variableMap.containsKey(variableName);
     }
 
-    void define(String variableName, int varIndex, PrimaryType type) {
-        define(variableName, varIndex, type, null);
+    void define(String variableName, int varIndex, PrimaryType type, int line) {
+        define(variableName, varIndex, type, null, line);
     }
 
-    void define(String variableName, int varIndex, PrimaryType type, PrimaryType elemType) {
+    void define(String variableName, int varIndex, PrimaryType type, PrimaryType elemType, int line) {
         if (variableMap.containsKey(variableName)) {
             throw new IntermediateException("'" + variableName + "' has defined");
         }
-        if (type == PrimaryType.Array && elemType != null) {
-            arrayTypeMap.put(varIndex, elemType);
+        if (type == PrimaryType.Array) {
+            TypeLazyBinding.getInstance().put(varIndex, elemType, line);
+        } else {
+            TypeLazyBinding.getInstance().put(varIndex, type, line);
         }
-        typeMap.put(varIndex, type);
         variableMap.put(variableName, varIndex);
     }
 
@@ -61,12 +60,5 @@ public class VariableRecorder {
             varIndex = parent.getVarIndex(variableName);
         }
         return varIndex;
-    }
-
-    public static PrimaryType getType(int varIndex) {
-        return typeMap.get(varIndex);
-    }
-    public static PrimaryType getElementType(int varIndex) {
-        return arrayTypeMap.get(varIndex);
     }
 }

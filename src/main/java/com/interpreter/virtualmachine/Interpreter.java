@@ -3,6 +3,7 @@ package com.interpreter.virtualmachine;
 import com.interpreter.intermediatecode.CodeChunk;
 import com.interpreter.intermediatecode.CodeChunk.*;
 import com.interpreter.intermediatecode.PrimaryType;
+import com.interpreter.intermediatecode.TypeLazyBinding;
 import com.interpreter.intermediatecode.VariableRecorder;
 
 import java.util.EnumMap;
@@ -76,7 +77,7 @@ public class Interpreter {
             } catch (NumberFormatException e) {
                 throw new RuntimeException("'" + v + "' is not a " + value.type);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             scanner.close();
             return  line + 1;
         });
@@ -92,12 +93,12 @@ public class Interpreter {
             if (length.type != PrimaryType.Int) {
                 throw new RuntimeException("index should be int");
             }
-            PrimaryType elemType = VariableRecorder.getElementType(code.getNum1());
+            PrimaryType elemType = TypeLazyBinding.getInstance().get(code.getNum1());
             if (elemType == null) {
                 throw new RuntimeException("array has not defined");
             }
             Array array = new Array(length.intValue, elemType);
-            dataChunk.setData(code.getNum1(), new Value(array));
+            dataChunk.setData(code.getNum1(), new Value(array), line);
             return line + 1;
         });
 
@@ -111,7 +112,7 @@ public class Interpreter {
                 throw new RuntimeException("'" + value + "' is not array type");
             }
             Array array = value.arrValue;
-            dataChunk.setData(code.getNum1(), array.getElement(index.intValue));
+            dataChunk.setData(code.getNum1(), array.getElement(index.intValue), line);
             return line + 1;
         });
 
@@ -133,11 +134,7 @@ public class Interpreter {
             ImmediateNumber immediateNumber = code.getImmediateNumber();
             Value value = immediateNumber == null ? dataChunk.getData(code.getNum2()) :
                     new Value(immediateNumber);
-            Value res = dataChunk.getData(code.getNum1());
-            if (res != null && res.type == PrimaryType.Array) {
-                throw new RuntimeException("array cannot be assigned");
-            }
-            dataChunk.setData(code.getNum1(), value);
+            dataChunk.setData(code.getNum1(), value, line);
             return line + 1;
         });
 
@@ -148,7 +145,7 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '+' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -159,7 +156,7 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '-' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -170,7 +167,7 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '*' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -181,7 +178,7 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '/' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -192,7 +189,7 @@ public class Interpreter {
                 throw new RuntimeException("undefined operation for "+ v1 +" '%' "+ v2);
             }
             Value res = new Value(v1.intValue % v2.intValue);
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -203,7 +200,7 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '>' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -214,7 +211,7 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '<' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -225,7 +222,7 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '>=' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -236,7 +233,7 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '<=' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -247,7 +244,7 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '==' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -258,14 +255,14 @@ public class Interpreter {
             if (res == null) {
                 throw new RuntimeException("undefined operation for "+ v1 +" '!=' "+ v2);
             }
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
         M.put(Command.Not, (Interpreter self, int line, Code code, DataChunk dataChunk)-> {
             Value value = dataChunk.getData(code.getNum1());
             value = new Value(!value.convertToBool());
-            dataChunk.setData(code.getNum1(), value);
+            dataChunk.setData(code.getNum1(), value, line);
             return line + 1;
         });
 
@@ -278,7 +275,7 @@ public class Interpreter {
             } else {
                 throw new RuntimeException("undefined operation for '!=' " + value);
             }
-            dataChunk.setData(code.getNum1(), value);
+            dataChunk.setData(code.getNum1(), value, line);
             return line + 1;
         });
 
@@ -286,7 +283,7 @@ public class Interpreter {
             Value v1 = dataChunk.getData(code.getNum1());
             Value v2 = dataChunk.getData(code.getNum2());
             Value res = v1.convertToBool() ? v2 : v1;
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
@@ -294,7 +291,7 @@ public class Interpreter {
             Value v1 = dataChunk.getData(code.getNum1());
             Value v2 = dataChunk.getData(code.getNum2());
             Value res = v1.convertToBool() ? v1 : v2;
-            dataChunk.setData(code.getNum1(), res);
+            dataChunk.setData(code.getNum1(), res, line);
             return line + 1;
         });
 
